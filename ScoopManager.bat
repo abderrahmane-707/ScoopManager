@@ -93,7 +93,7 @@ call :PKG_BULK_ACTION "upgrade"
 call :GO & goto SCOOP_MENU
 
 :REMOVE_MENU
-cls & echo list installed programs
+cls
 call scoop list
 
 echo.
@@ -126,7 +126,7 @@ echo              -------------------------------oOOo-(_)-oOOo------------------
 echo                                       Scoop Buckets Installer
 echo              ---------------------------------------------------------------------------
 echo.
-echo                    [1] extras               [4]  php                 [7] nonportable
+echo                    [1] extras               [4] php                  [7] nonportable
 echo                    [2] versions             [5] games                [8] sysinternals
 echo                    [3] java                 [6] nerd-fonts           [9] nirsoft
 echo.
@@ -171,7 +171,7 @@ call scoop update
 call :GO & goto BUCKET_MENU
 
 :REMOVE_BUCKETS
-cls & echo Currently Installed Buckets
+cls & echo Installed Buckets
 call scoop bucket list
 
 echo.
