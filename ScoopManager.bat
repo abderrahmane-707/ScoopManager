@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 mode con: cols=100 lines=30
 
-:: Initialize Constants
+:: Initialize
 set "PROGS_COUNT=24"
 set "BUCKET_COUNT=9"
 set "ON=(YES)"
@@ -40,7 +40,7 @@ echo.
 echo                    [A] Select All            [D] Deselect All            [X] Exit
 
 echo. & echo Selected programs:
-call :SHOW_SELECTED OPT NAME %PROGS_COUNT%
+call :SHOW_SELECTED_PROGS
 
 echo. & echo Tip: You can select multiple items, e.g. 1,3,5 or 1-5 or 1-3,7,10-12
 
@@ -49,14 +49,14 @@ echo. & set "choice=" & set /p "choice=--> Select option(s) and press [S] to Sta
 if "%choice%"=="" goto SCOOP_MENU
 if /i "%choice%"=="X" exit
 if /i "%choice%"=="S" goto RUN_PROGRAMS
-if /i "%choice%"=="A" (call :SELECT_ALL OPT %PROGS_COUNT% & goto SCOOP_MENU)
-if /i "%choice%"=="D" (call :DESELECT_ALL OPT %PROGS_COUNT% & goto SCOOP_MENU)
+if /i "%choice%"=="A" (call :SELECT_ALL_PROGS & goto SCOOP_MENU)
+if /i "%choice%"=="D" (call :DESELECT_ALL_PROGS & goto SCOOP_MENU)
 if /i "%choice%"=="U" goto UPDATE_MENU
 if /i "%choice%"=="R" goto REMOVE_MENU
 if /i "%choice%"=="B" goto BUCKET_MENU
 if /i "%choice%"=="M" goto MORE_PROG
 
-call :MULTI_INPUT OPT %PROGS_COUNT%
+call :MULTI_INPUT_PROGS
 goto SCOOP_MENU
 
 :RUN_PROGRAMS
@@ -71,7 +71,7 @@ for /L %%i in (1,1,%PROGS_COUNT%) do (
         )
     )
 )
-call :GO & call :DESELECT_ALL OPT %PROGS_COUNT% & goto SCOOP_MENU
+call :GO & call :DESELECT_ALL_PROGS & goto SCOOP_MENU
 
 :UPDATE_MENU
 cls & echo Checking available updates
@@ -138,20 +138,20 @@ echo.
 echo                    [A] Select All            [D] Deselect All            [0] Back
 
 echo. & echo Selected buckets:
-call :SHOW_SELECTED BOPT BUCKET %BUCKET_COUNT%
+call :SHOW_SELECTED_BUCKETS
 
 echo. & echo Tip: You can select multiple items, e.g. 1,3,5 or 1-5 or 1-3,7,10-12
 echo. & set "choice=" & set /p "choice=--> Select option(s) and press [S] to Start: "
 
 if "%choice%"=="" goto BUCKET_MENU
 if "%choice%"=="0" goto SCOOP_MENU
-if /i "%choice%"=="A" (call :SELECT_ALL BOPT %BUCKET_COUNT% & goto BUCKET_MENU)
-if /i "%choice%"=="D" (call :DESELECT_ALL BOPT %BUCKET_COUNT% & goto BUCKET_MENU)
+if /i "%choice%"=="A" (call :SELECT_ALL_BUCKETS & goto BUCKET_MENU)
+if /i "%choice%"=="D" (call :DESELECT_ALL_BUCKETS & goto BUCKET_MENU)
 if /i "%choice%"=="U" goto UPDATE_BUCKETS
 if /i "%choice%"=="S" goto INSTALL_BUCKETS
 if /i "%choice%"=="R" goto REMOVE_BUCKETS
 
-call :MULTI_INPUT BOPT %BUCKET_COUNT%
+call :MULTI_INPUT_BUCKETS
 goto BUCKET_MENU
 
 :INSTALL_BUCKETS
@@ -163,7 +163,7 @@ for /L %%i in (1,1,%BUCKET_COUNT%) do (
         call scoop bucket add !BUCKET%%i!
     )
 )
-call :GO & call :DESELECT_ALL BOPT %BUCKET_COUNT% & goto BUCKET_MENU
+call :GO & call :DESELECT_ALL_BUCKETS & goto BUCKET_MENU
 
 :UPDATE_BUCKETS
 cls & echo Updating all Buckets
@@ -202,12 +202,9 @@ if /i "%choice%"=="ALL" (
 
 call :GO & goto BUCKET_MENU
 
-:MULTI_INPUT
-:: %1 = Option Prefix (e.g., OPT or BOPT)
-:: %2 = Max Limit (e.g., %PROGS_COUNT% or %BUCKET_COUNT%)
+:: ---- Programs (OPT / NAME / PROGS_COUNT) ----
 
-set "prefix=%~1"
-set "maxLimit=%~2"
+:MULTI_INPUT_PROGS
 set "invalid="
 set "tokens=%choice:,= %"
 
@@ -226,16 +223,16 @@ for %%G in (%tokens%) do (
         set "isNum2=1" & for /f "delims=0123456789" %%C in ("!rangeEnd!") do set "isNum2=0"
 
         if defined rangeStart if defined rangeEnd if "!isNum1!!isNum2!"=="11" (
-            if !rangeStart! geq 1 if !rangeEnd! leq !maxLimit! if !rangeStart! leq !rangeEnd! (
-                for /L %%N in (!rangeStart!,1,!rangeEnd!) do call :TOGGLE_SINGLE !prefix!%%N
+            if !rangeStart! geq 1 if !rangeEnd! leq %PROGS_COUNT% if !rangeStart! leq !rangeEnd! (
+                for /L %%N in (!rangeStart!,1,!rangeEnd!) do call :TOGGLE_SINGLE OPT%%N
                 set "matched=1"
             )
         )
     ) else (
         set "isNum=1" & for /f "delims=0123456789" %%C in ("!tok!") do set "isNum=0"
         if "!isNum!"=="1" if defined tok (
-            if !tok! geq 1 if !tok! leq !maxLimit! (
-                call :TOGGLE_SINGLE !prefix!!tok!
+            if !tok! geq 1 if !tok! leq %PROGS_COUNT% (
+                call :TOGGLE_SINGLE OPT!tok!
                 set "matched=1"
             )
         )
@@ -250,35 +247,94 @@ if defined invalid (
 )
 goto :eof
 
-:TOGGLE_SINGLE
-:: %1 = full variable name, e.g. OPT3 or BOPT5
-if "!%~1!"=="%ON%" (set "%~1=%OFF%") else (set "%~1=%ON%")
-goto :eof
-
-:SHOW_SELECTED
-set "optPrefix=%~1"
-set "namePrefix=%~2"
-set "cnt=%~3"
+:SHOW_SELECTED_PROGS
 set "ANY=0"
-for /L %%i in (1,1,%cnt%) do (
-    if "!%optPrefix%%%i!"=="%ON%" (
-        echo     - !%namePrefix%%%i!
+for /L %%i in (1,1,%PROGS_COUNT%) do (
+    if "!OPT%%i!"=="%ON%" (
+        echo     - !NAME%%i!
         set "ANY=1"
     )
 )
 if "!ANY!"=="0" echo     - No item selected
 goto :eof
 
-:SELECT_ALL
-set "optPrefix=%~1"
-set "cnt=%~2"
-for /L %%i in (1,1,%cnt%) do set "%optPrefix%%%i=%ON%"
+:SELECT_ALL_PROGS
+for /L %%i in (1,1,%PROGS_COUNT%) do set "OPT%%i=%ON%"
 goto :eof
 
-:DESELECT_ALL
-set "optPrefix=%~1"
-set "cnt=%~2"
-for /L %%i in (1,1,%cnt%) do set "%optPrefix%%%i=%OFF%"
+:DESELECT_ALL_PROGS
+for /L %%i in (1,1,%PROGS_COUNT%) do set "OPT%%i=%OFF%"
+goto :eof
+
+:: ---- Buckets (BOPT / BUCKET / BUCKET_COUNT) ----
+
+:MULTI_INPUT_BUCKETS
+set "invalid="
+set "tokens=%choice:,= %"
+
+for %%G in (%tokens%) do (
+    set "tok=%%G"
+    set "matched=0"
+    set "noHyphen=!tok:-=!"
+
+    if not "!tok!"=="!noHyphen!" (
+        set "rangeStart=" & set "rangeEnd="
+        for /f "tokens=1,2 delims=-" %%X in ("!tok!") do (
+            set "rangeStart=%%X"
+            set "rangeEnd=%%Y"
+        )
+        set "isNum1=1" & for /f "delims=0123456789" %%C in ("!rangeStart!") do set "isNum1=0"
+        set "isNum2=1" & for /f "delims=0123456789" %%C in ("!rangeEnd!") do set "isNum2=0"
+
+        if defined rangeStart if defined rangeEnd if "!isNum1!!isNum2!"=="11" (
+            if !rangeStart! geq 1 if !rangeEnd! leq %BUCKET_COUNT% if !rangeStart! leq !rangeEnd! (
+                for /L %%N in (!rangeStart!,1,!rangeEnd!) do call :TOGGLE_SINGLE BOPT%%N
+                set "matched=1"
+            )
+        )
+    ) else (
+        set "isNum=1" & for /f "delims=0123456789" %%C in ("!tok!") do set "isNum=0"
+        if "!isNum!"=="1" if defined tok (
+            if !tok! geq 1 if !tok! leq %BUCKET_COUNT% (
+                call :TOGGLE_SINGLE BOPT!tok!
+                set "matched=1"
+            )
+        )
+    )
+
+    if "!matched!"=="0" set "invalid=!invalid! !tok!"
+)
+
+if defined invalid (
+    echo. & echo Invalid or out-of-range input:!invalid!
+    pause
+)
+goto :eof
+
+:SHOW_SELECTED_BUCKETS
+set "ANY=0"
+for /L %%i in (1,1,%BUCKET_COUNT%) do (
+    if "!BOPT%%i!"=="%ON%" (
+        echo     - !BUCKET%%i!
+        set "ANY=1"
+    )
+)
+if "!ANY!"=="0" echo     - No item selected
+goto :eof
+
+:SELECT_ALL_BUCKETS
+for /L %%i in (1,1,%BUCKET_COUNT%) do set "BOPT%%i=%ON%"
+goto :eof
+
+:DESELECT_ALL_BUCKETS
+for /L %%i in (1,1,%BUCKET_COUNT%) do set "BOPT%%i=%OFF%"
+goto :eof
+
+:: ---- Shared helpers ----
+
+:: %1 = the specific variable name to toggle (e.g. OPT3, BOPT5) - kept as an argument since it changes on every call
+:TOGGLE_SINGLE
+if "!%~1!"=="%ON%" (set "%~1=%OFF%") else (set "%~1=%ON%")
 goto :eof
 
 :PKG_BULK_ACTION
@@ -348,8 +404,8 @@ set "BUCKET8=sysinternals"
 set "BUCKET9=nirsoft"
 
 :: Every toggle variable starts in a known (OFF) state
-call :DESELECT_ALL OPT %PROGS_COUNT%
-call :DESELECT_ALL BOPT %BUCKET_COUNT%
+call :DESELECT_ALL_PROGS
+call :DESELECT_ALL_BUCKETS
 goto :eof
 
 :GO
