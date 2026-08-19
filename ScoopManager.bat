@@ -4,7 +4,7 @@ setlocal enabledelayedexpansion
 call :WHERE_SCOOP
 
 :: Initialize
-set "MAX_PKG=25"
+set "MAX_PKG=23"
 set "ON=(YES)"
 set "OFF=(NO)"
 
@@ -218,46 +218,46 @@ if %errorlevel% neq 0 (
 goto :eof
 
 :INIT_PACKAGES
-:: CLI File Managers, Search & Navigation
+:: File Managers, Search & Navigation
 set "ITEM1=ripgrep|Ripgrep"
 set "ITEM2=fd|fd-find"
 set "ITEM3=fzf|fzf"
 set "ITEM4=yazi|Yazi"
 set "ITEM5=tre-command|Tre"
+set "ITEM6=everything|Everything"
+set "ITEM7=winmerge|WinMerge"
 
-:: Benchmarking & Code Analytics
-set "ITEM6=btop|btop"
-set "ITEM7=hyperfine|Hyperfine"
-set "ITEM8=tokei|Tokei"
+:: Archivers & Compression
+set "ITEM8=7zip|7-Zip"
+
+:: System Info & Benchmarking
+set "ITEM9=btop|btop"
+set "ITEM10=hyperfine|Hyperfine"
+set "ITEM11=hwinfo|HWiNFO"
+
+:: System Cleaners
+set "ITEM12=bleachbit|BleachBit"
 
 :: Network Tools
-set "ITEM9=curl|cURL"
-set "ITEM10=aria2|aria2"
-set "ITEM11=yt-dlp|yt-dlp"
+set "ITEM13=curl|cURL"
+set "ITEM14=aria2|aria2"
+set "ITEM15=ytdlp-interface|yt-dlp Interface"
 
 :: Text Editors
-set "ITEM12=vscode|VS Code"
-set "ITEM13=neovim|Neovim"
-set "ITEM14=micro|Micro"
+set "ITEM16=vscode|VS Code"
+set "ITEM17=micro|Micro"
 
 :: Git Tools
-set "ITEM15=git|Git"
-set "ITEM16=gh|GitHub CLI"
-set "ITEM17=sourcegit|SourceGit"
-set "ITEM18=lazygit|Lazygit"
-set "ITEM19=delta|Git Delta"
-
-:: Build Systems
-set "ITEM20=cmake|CMake"
-set "ITEM21=make|Make"
-set "ITEM22=ninja|Ninja"
+set "ITEM18=git|Git"
+set "ITEM19=gh|GitHub CLI"
+set "ITEM20=sourcegit|SourceGit"
 
 :: Compilers
-set "ITEM23=mingw|MinGw"
-set "ITEM24=llvm|LLVM"
+set "ITEM21=mingw|MinGw"
+set "ITEM22=llvm|LLVM"
 
 :: Debuggers
-set "ITEM25=cppcheck|Cppcheck"
+set "ITEM23=cppcheck|Cppcheck"
 
 call :DESELECT_ALL_PKG
 goto :eof
