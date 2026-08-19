@@ -1,6 +1,8 @@
 @echo off
 setlocal enabledelayedexpansion
 
+call :WHERE_SCOOP
+
 :: Initialize
 set "MAX_PKG=25"
 set "ON=(YES)"
@@ -195,30 +197,23 @@ if /i "!choice!"=="ALL" (
 )
 call :GO & goto BUCKET_MENU
 
+:WHERE_SCOOP
+where scoop >nul 2>&1 && goto :eof
 
-:RENDER_COLUMNS
-set "iprefix=%~1"
-set "oprefix=%~2"
-set "mx=%~3"
-set /a "ROWS=(mx+2)/3"
-for /L %%r in (1,1,!ROWS!) do (
-    set "line="
-    for %%x in (1 2 3) do (
-        set /a "idx=%%r+ROWS*(%%x-1)"
-        set "cell=                         "
-        if !idx! leq !mx! (
-            for %%V in (!iprefix!!idx!) do for %%W in (!oprefix!!idx!) do (
-                for /f "tokens=1,2 delims=|" %%A in ("!%%V!") do (
-                    set "cell=  [!idx!] %%B"
-                    if "!%%W!"=="!ON!" set "cell=* [!idx!] %%B"
-                )
-            )
-        )
-        set "cell=!cell!                          "
-        set "cell=!cell:~0,25!"
-        set "line=!line!!cell!"
-    )
-    echo                  !line!
+echo Scoop is not installed.
+choice /C YN /M "Do you want to download and install Scoop? [Y/n]"
+if errorlevel 2 exit /b 1
+
+echo Installing Scoop via PowerShell...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')"
+
+:: Update current session PATH so 'where scoop' works immediately without restarting CMD
+set "PATH=%USERPROFILE%\scoop\shims;%PATH%"
+
+where scoop >nul 2>&1
+if %errorlevel% neq 0 (
+    echo Installation failed or PATH not updated in this session
+    pause & exit /b 1
 )
 goto :eof
 
@@ -268,8 +263,6 @@ call :DESELECT_ALL_PKG
 goto :eof
 
 :INIT_BUCKET
-:: Each entry: id|Display Name
-
 :: Extra utilities
 set "BITEM1=extras|Extras"
 
@@ -298,6 +291,32 @@ set "BITEM8=sysinternals|Sysinternals"
 set "BITEM9=nirsoft|NirSoft"
 
 call :DESELECT_ALL_BUCKETS
+goto :eof
+
+:RENDER_COLUMNS
+set "iprefix=%~1"
+set "oprefix=%~2"
+set "mx=%~3"
+set /a "ROWS=(mx+2)/3"
+for /L %%r in (1,1,!ROWS!) do (
+    set "line="
+    for %%x in (1 2 3) do (
+        set /a "idx=%%r+ROWS*(%%x-1)"
+        set "cell=                         "
+        if !idx! leq !mx! (
+            for %%V in (!iprefix!!idx!) do for %%W in (!oprefix!!idx!) do (
+                for /f "tokens=1,2 delims=|" %%A in ("!%%V!") do (
+                    set "cell=  [!idx!] %%B"
+                    if "!%%W!"=="!ON!" set "cell=* [!idx!] %%B"
+                )
+            )
+        )
+        set "cell=!cell!                          "
+        set "cell=!cell:~0,25!"
+        set "line=!line!!cell!"
+    )
+    echo                  !line!
+)
 goto :eof
 
 :MULTI_INPUT
