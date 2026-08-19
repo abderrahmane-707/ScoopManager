@@ -2,16 +2,12 @@
 setlocal enabledelayedexpansion
 
 :: Initialize
-set "PROGS_COUNT=26"
-set "BUCKET_COUNT=9"
+set "MAX_PKG=25"
 set "ON=(YES)"
 set "OFF=(NO)"
 
-:: Check external 7z once at startup
-call :WHERE_7Z
-
-:: Initialize programs/bucket
-call :INIT_NAMES
+:: Initialize packages
+call :INIT_PACKAGES
 
 :: Main interface
 :SCOOP_MENU
@@ -20,25 +16,14 @@ echo.
 echo                                                 \\!//
 echo                                                 (o o)
 echo              -------------------------------oOOo-(_)-oOOo-------------------------------
-echo                                        Scoop Software Installer
+echo                                        Scoop Package Manager
 echo              ---------------------------------------------------------------------------
 echo.
-
-set /a "ROWS=(PROGS_COUNT+2)/3"
-for /L %%r in (1,1,!ROWS!) do (
-    set /a "c1=%%r"
-    set /a "c2=%%r+!ROWS!"
-    set /a "c3=%%r+!ROWS!*2"
-    set "col1=" & set "col2=" & set "col3="
-    if !c1! leq %PROGS_COUNT% call :FORMAT_ITEM !c1! OPT NAME col1
-    if !c2! leq %PROGS_COUNT% call :FORMAT_ITEM !c2! OPT NAME col2
-    if !c3! leq %PROGS_COUNT% call :FORMAT_ITEM !c3! OPT NAME col3
-    call :PRINT_ROW "!col1!" "!col2!" "!col3!"
-)
+call :RENDER_COLUMNS ITEM OPT %MAX_PKG%
 
 echo.
-echo    [U] Update Programs
-echo    [R] Remove Programs
+echo    [U] Update Packages
+echo    [R] Remove Packages
 echo    [B] Manage Buckets
 echo    [M] More
 echo.
@@ -52,35 +37,39 @@ echo. & set "choice=" & set /p "choice=--> Select option(s) and press [S] to Sta
 
 if "%choice%"=="" goto SCOOP_MENU
 if "%choice%"=="0" exit /b
-if /i "%choice%"=="S" goto RUN_PROGRAMS
-if /i "%choice%"=="A" (call :SELECT_ALL_PROGS & goto SCOOP_MENU)
-if /i "%choice%"=="D" (call :DESELECT_ALL_PROGS & goto SCOOP_MENU)
+if /i "%choice%"=="S" goto RUN_PACKAGES
+if /i "%choice%"=="A" (call :SELECT_ALL_PKG & goto SCOOP_MENU)
+if /i "%choice%"=="D" (call :DESELECT_ALL_PKG & goto SCOOP_MENU)
 if /i "%choice%"=="U" goto UPDATE_MENU
 if /i "%choice%"=="R" goto REMOVE_MENU
-if /i "%choice%"=="B" goto BUCKET_MENU
-if /i "%choice%"=="M" goto MORE_PROG
+if /i "%choice%"=="B" goto BUCKET_INITIAL
+if /i "%choice%"=="M" goto MORE_PKG
 
-call :MULTI_INPUT OPT %PROGS_COUNT%
+call :MULTI_INPUT OPT %MAX_PKG%
 goto SCOOP_MENU
 
-:RUN_PROGRAMS
+:RUN_PACKAGES
 cls
 :: Collect every selected program into a single list, then process it in one call
 set "toInstall="
-for /L %%i in (1,1,%PROGS_COUNT%) do (
-    if "!OPT%%i!"=="%ON%" set "toInstall=!toInstall! !NAME%%i!"
+for /L %%i in (1,1,%MAX_PKG%) do (
+    if "!OPT%%i!"=="%ON%" (
+        for %%V in (ITEM%%i) do for /f "tokens=1 delims=|" %%A in ("!%%V!") do set "toInstall=!toInstall! %%A"
+    )
 )
 
 if not defined toInstall (
-    echo. & echo No programs selected
+    echo. & echo No packages selected
     call :GO & goto SCOOP_MENU
 )
 
 echo Installing the following packages:
 for %%P in (!toInstall!) do echo     - %%P
 
-echo. & call scoop install -k !toInstall!
-call :GO & call :DESELECT_ALL_PROGS & goto SCOOP_MENU
+echo. & call :WHERE_7Z
+call scoop install -k !toInstall!
+
+call :GO & call :DESELECT_ALL_PKG & goto SCOOP_MENU
 
 :UPDATE_MENU
 cls & echo Checking available updates
@@ -102,7 +91,6 @@ call scoop list
 call :PRINT_ACTION_PROMPT "remove"
 
 set "choice=" & set /p "choice=--> "
-
 if "%choice%"=="" goto REMOVE_MENU
 if "%choice%"=="0" goto SCOOP_MENU
 
@@ -110,32 +98,28 @@ call :PKG_BULK_ACTION "uninstall"
 call :GO & goto SCOOP_MENU
 
 :MORE_PROG
-cls & set "apps=" & set /p apps="Enter app name(s) separated by spaces: "
-if "%apps%"=="" goto MORE_PROG
+cls & set "prog=" & set /p prog="Enter program name(s) separated by spaces: "
+if "%prog%"=="" goto MORE_PROG
 
-call scoop install -k %apps%
+echo. & call :WHERE_7Z
+call scoop install -k %prog%
+
 call :GO & goto SCOOP_MENU
+
+:BUCKET_INITIAL
+set "MAX_BUCKET=9"
+call :INIT_BUCKET
 
 :BUCKET_MENU
 cls & echo.
 echo                                                 \\!//
 echo                                                 (o o)
 echo              -------------------------------oOOo-(_)-oOOo-------------------------------
-echo                                             Scoop Buckets
+echo                                          Scoop Buckets Manager
 echo              ---------------------------------------------------------------------------
 echo.
 
-set /a "BROWS=(BUCKET_COUNT+2)/3"
-for /L %%r in (1,1,!BROWS!) do (
-    set /a "c1=%%r"
-    set /a "c2=%%r+!BROWS!"
-    set /a "c3=%%r+!BROWS!*2"
-    set "col1=" & set "col2=" & set "col3="
-    if !c1! leq %BUCKET_COUNT% call :FORMAT_ITEM !c1! BOPT BUCKET col1
-    if !c2! leq %BUCKET_COUNT% call :FORMAT_ITEM !c2! BOPT BUCKET col2
-    if !c3! leq %BUCKET_COUNT% call :FORMAT_ITEM !c3! BOPT BUCKET col3
-    call :PRINT_ROW "!col1!" "!col2!" "!col3!"
-)
+call :RENDER_COLUMNS BITEM BOPT %MAX_BUCKET%
 
 echo.
 echo    [U] Update Buckets
@@ -150,21 +134,23 @@ echo Tip: You can select multiple items, e.g. 1,3,5 or 1-5 or 1-3,7,10-12
 echo. & set "choice=" & set /p "choice=--> Select option(s) and press [S] to Start: "
 
 if "%choice%"=="" goto BUCKET_MENU
-if "%choice%"=="0" goto SCOOP_MENU
+if "%choice%"=="0" (call :DESELECT_ALL_PKG & goto SCOOP_MENU)
 if /i "%choice%"=="A" (call :SELECT_ALL_BUCKETS & goto BUCKET_MENU)
 if /i "%choice%"=="D" (call :DESELECT_ALL_BUCKETS & goto BUCKET_MENU)
 if /i "%choice%"=="U" goto UPDATE_BUCKETS
 if /i "%choice%"=="S" goto ADD_BUCKETS
 if /i "%choice%"=="R" goto REMOVE_BUCKETS
 
-call :MULTI_INPUT BOPT %BUCKET_COUNT%
+call :MULTI_INPUT BOPT %MAX_BUCKET%
 goto BUCKET_MENU
 
 :ADD_BUCKETS
 cls
 set "toAddBuckets="
-for /L %%i in (1,1,%BUCKET_COUNT%) do (
-    if "!BOPT%%i!"=="%ON%" set "toAddBuckets=!toAddBuckets! !BUCKET%%i!"
+for /L %%i in (1,1,%MAX_BUCKET%) do (
+    if "!BOPT%%i!"=="%ON%" (
+        for %%V in (BITEM%%i) do for /f "tokens=1 delims=|" %%A in ("!%%V!") do set "toAddBuckets=!toAddBuckets! %%A"
+    )
 )
 
 if not defined toAddBuckets (
@@ -189,11 +175,8 @@ call scoop bucket list
 
 call :PRINT_ACTION_PROMPT "remove"
 
-set "choice=" 
-set /p "choice=--> "
-if not defined choice goto REMOVE_BUCKETS
-set "choice=!choice:"=!"
-
+set "choice=" & set /p "choice=--> "
+if "%choice%"=="" goto REMOVE_BUCKETS
 if "!choice!"=="0" goto BUCKET_MENU
 
 if /i "!choice!"=="ALL" (
@@ -210,8 +193,112 @@ if /i "!choice!"=="ALL" (
         call scoop bucket rm %%G
     )
 )
-
 call :GO & goto BUCKET_MENU
+
+
+:RENDER_COLUMNS
+set "iprefix=%~1"
+set "oprefix=%~2"
+set "mx=%~3"
+set /a "ROWS=(mx+2)/3"
+for /L %%r in (1,1,!ROWS!) do (
+    set "line="
+    for %%x in (1 2 3) do (
+        set /a "idx=%%r+ROWS*(%%x-1)"
+        set "cell=                         "
+        if !idx! leq !mx! (
+            for %%V in (!iprefix!!idx!) do for %%W in (!oprefix!!idx!) do (
+                for /f "tokens=1,2 delims=|" %%A in ("!%%V!") do (
+                    set "cell=  [!idx!] %%B"
+                    if "!%%W!"=="!ON!" set "cell=* [!idx!] %%B"
+                )
+            )
+        )
+        set "cell=!cell!                          "
+        set "cell=!cell:~0,25!"
+        set "line=!line!!cell!"
+    )
+    echo                  !line!
+)
+goto :eof
+
+:INIT_PACKAGES
+:: CLI File Managers, Search & Navigation
+set "ITEM1=ripgrep|Ripgrep"
+set "ITEM2=fd|fd-find"
+set "ITEM3=fzf|fzf"
+set "ITEM4=yazi|Yazi"
+set "ITEM5=tre-command|Tre"
+
+:: Benchmarking & Code Analytics
+set "ITEM6=btop|btop"
+set "ITEM7=hyperfine|Hyperfine"
+set "ITEM8=tokei|Tokei"
+
+:: Network Tools
+set "ITEM9=curl|cURL"
+set "ITEM10=aria2|aria2"
+set "ITEM11=yt-dlp|yt-dlp"
+
+:: Text Editors
+set "ITEM12=vscode|VS Code"
+set "ITEM13=neovim|Neovim"
+set "ITEM14=micro|Micro"
+
+:: Git Tools
+set "ITEM15=git|Git"
+set "ITEM16=gh|GitHub CLI"
+set "ITEM17=sourcegit|SourceGit"
+set "ITEM18=lazygit|Lazygit"
+set "ITEM19=delta|Git Delta"
+
+:: Build Systems
+set "ITEM20=cmake|CMake"
+set "ITEM21=make|Make"
+set "ITEM22=ninja|Ninja"
+
+:: Compilers
+set "ITEM23=mingw|MinGw"
+set "ITEM24=llvm|LLVM"
+
+:: Debuggers
+set "ITEM25=cppcheck|Cppcheck"
+
+call :DESELECT_ALL_PKG
+goto :eof
+
+:INIT_BUCKET
+:: Each entry: id|Display Name
+
+:: Extra utilities
+set "BITEM1=extras|Extras"
+
+:: Beta, or legacy versions
+set "BITEM2=versions|Versions"
+
+:: Java Development Kits (JDKs), JREs
+set "BITEM3=java|Java"
+
+:: PHP runtimes, extensions, and web development tooling
+set "BITEM4=php|PHP"
+
+:: Open-source and freeware games
+set "BITEM5=games|Games"
+
+:: Developer fonts patched with icons for terminals and editors
+set "BITEM6=nerd-fonts|Nerd Fonts"
+
+:: Software requiring system installation
+set "BITEM7=nonportable|Non-Portable"
+
+:: Sysinternals tools
+set "BITEM8=sysinternals|Sysinternals"
+
+:: NirSoft utilities
+set "BITEM9=nirsoft|NirSoft"
+
+call :DESELECT_ALL_BUCKETS
+goto :eof
 
 :MULTI_INPUT
 set "prefix=%~1"
@@ -235,7 +322,11 @@ for %%G in (%tokens%) do (
 
         if defined rangeStart if defined rangeEnd if "!isNum1!!isNum2!"=="11" (
             if !rangeStart! geq 1 if !rangeEnd! leq !max_count! if !rangeStart! leq !rangeEnd! (
-                for /L %%N in (!rangeStart!,1,!rangeEnd!) do call :TOGGLE_SINGLE %prefix%%%N
+                for /L %%N in (!rangeStart!,1,!rangeEnd!) do (
+                    for %%V in (%prefix%%%N) do (
+                        if "!%%V!"=="%ON%" (set "%%V=%OFF%") else (set "%%V=%ON%")
+                    )
+                )
                 set "matched=1"
             )
         )
@@ -243,7 +334,9 @@ for %%G in (%tokens%) do (
         set "isNum=1" & for /f "delims=0123456789" %%C in ("!tok!") do set "isNum=0"
         if "!isNum!"=="1" if defined tok (
             if !tok! geq 1 if !tok! leq !max_count! (
-                call :TOGGLE_SINGLE %prefix%!tok!
+                for %%V in (%prefix%!tok!) do (
+                    if "!%%V!"=="%ON%" (set "%%V=%OFF%") else (set "%%V=%ON%")
+                )
                 set "matched=1"
             )
         )
@@ -258,56 +351,14 @@ if defined invalid (
 )
 goto :eof
 
-:SELECT_ALL_PROGS
-for /L %%i in (1,1,%PROGS_COUNT%) do set "OPT%%i=%ON%"
-goto :eof
-
-:DESELECT_ALL_PROGS
-for /L %%i in (1,1,%PROGS_COUNT%) do set "OPT%%i=%OFF%"
-goto :eof
-
-:SELECT_ALL_BUCKETS
-for /L %%i in (1,1,%BUCKET_COUNT%) do set "BOPT%%i=%ON%"
-goto :eof
-
-:DESELECT_ALL_BUCKETS
-for /L %%i in (1,1,%BUCKET_COUNT%) do set "BOPT%%i=%OFF%"
-goto :eof
-
-:PRINT_ACTION_PROMPT
-echo.
-echo --------------------------------------------------------------------------------
-echo Type ALL to %~1 everything
-echo Or type the exact name(s) as shown above, separated by commas
-echo Type 0 to go back
-echo --------------------------------------------------------------------------------
-goto :eof
-
-:: %1 = the specific variable name to toggle (e.g. OPT3, BOPT5)
-:TOGGLE_SINGLE
-if "!%~1!"=="%ON%" (set "%~1=%OFF%") else (set "%~1=%ON%")
-goto :eof
-
-:FORMAT_ITEM
-set "%~4=  [%~1] !%~3%~1!"
-if "!%~2%~1!"=="%ON%" set "%~4=* [%~1] !%~3%~1!"
-set "%~4=!%~4!                          "
-set "%~4=!%~4:~0,25!"
-goto :eof
-
-:: Prints one menu row made of up to 3 pre-formatted column labels
-:PRINT_ROW
-echo                  %~1%~2%~3
-goto :eof
-
 :PKG_BULK_ACTION
-set "bulkAction=%~1"
 if /i "!choice!"=="ALL" (
-    if /i "%bulkAction%"=="upgrade" (
-        echo Updating all programs
+    if /i "%~1"=="upgrade" (
+        echo Updating all packages
+        echo. & call :WHERE_7Z
         call scoop update -k * && call scoop cleanup *
     ) else (
-        echo Removing all programs
+        echo Removing all packages
         set "toRemove="
         for /f "skip=2 tokens=1" %%P in ('call scoop list 2^>nul') do (
             if not "%%P"=="" set "toRemove=!toRemove! %%P"
@@ -319,81 +370,53 @@ if /i "!choice!"=="ALL" (
 ) else (
     :: Collect every requested name into one list, then process it in a single call
     set "targets=!choice:,= !"
-    echo. & echo Processing: !targets!
-    if /i "%bulkAction%"=="upgrade" (
+    echo.
+    if /i "%~1"=="upgrade" (
+	    echo Updating: !targets!
+        echo. & call :WHERE_7Z
         call scoop update -k !targets! && call scoop cleanup !targets!
     ) else (
+	    echo Removing: !targets!
         call scoop uninstall !targets! --purge
     )
 )
 goto :eof
 
+:SELECT_ALL_PKG
+for /L %%i in (1,1,%MAX_PKG%) do set "OPT%%i=%ON%"
+goto :eof
+
+:DESELECT_ALL_PKG
+for /L %%i in (1,1,%MAX_PKG%) do set "OPT%%i=%OFF%"
+goto :eof
+
+:SELECT_ALL_BUCKETS
+for /L %%i in (1,1,%MAX_BUCKET%) do set "BOPT%%i=%ON%"
+goto :eof
+
+:DESELECT_ALL_BUCKETS
+for /L %%i in (1,1,%MAX_BUCKET%) do set "BOPT%%i=%OFF%"
+goto :eof
+
+:PRINT_ACTION_PROMPT
+echo.
+echo --------------------------------------------------------------------------------
+echo Type ALL to %~1 everything
+echo Or type the exact name(s) as shown above, separated by commas
+echo Type 0 to go back
+echo --------------------------------------------------------------------------------
+goto :eof
+
 :WHERE_7Z
+if "%HAS_7Z%"=="1" goto :eof
 where 7z.exe >nul 2>&1
 if %errorlevel% equ 0 (
     call scoop config use_external_7zip true >nul 2>&1
 ) else (
     call scoop config use_external_7zip false >nul 2>&1
 )
-goto :eof
 
-:INIT_NAMES
-:: Compilers & Toolchains
-set "NAME1=gcc"
-set "NAME2=llvm"
-
-:: Static Analysis & Tools
-set "NAME3=gdb"
-set "NAME4=cppcheck"
-
-:: Build Systems & Automation
-set "NAME5=cmake"
-set "NAME6=make"
-set "NAME7=ninja"
-
-:: Version Control (Git Tools)
-set "NAME8=git"
-set "NAME9=gh"
-set "NAME10=sourcegit"
-set "NAME11=lazygit"
-set "NAME12=delta"
-
-:: Code & Text Editors
-set "NAME13=vscode"
-set "NAME14=neovim"
-set "NAME15=micro"
-
-:: CLI File Managers, Search & Navigation
-set "NAME16=yazi"
-set "NAME17=ripgrep"
-set "NAME18=fd"
-set "NAME19=fzf"
-set "NAME20=tre-command"
-
-:: Downloaders & Network Tools
-set "NAME21=curl"
-set "NAME22=aria2"
-set "NAME23=yt-dlp"
-
-:: System Monitoring, Benchmarking & Code Analytics
-set "NAME24=btop"
-set "NAME25=hyperfine"
-set "NAME26=tokei"
-
-:: Bucket list
-set "BUCKET1=extras"
-set "BUCKET2=versions"
-set "BUCKET3=java"
-set "BUCKET4=php"
-set "BUCKET5=games"
-set "BUCKET6=nerd-fonts"
-set "BUCKET7=nonportable"
-set "BUCKET8=sysinternals"
-set "BUCKET9=nirsoft"
-
-:: Every toggle variable starts in a known (OFF) state
-call :DESELECT_ALL_PROGS
-call :DESELECT_ALL_BUCKETS
+set "HAS_7Z=1"
 goto :eof
 
 :GO
