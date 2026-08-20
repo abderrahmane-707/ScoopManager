@@ -4,7 +4,6 @@ setlocal enabledelayedexpansion
 call :WHERE_SCOOP
 
 :: Initialize
-set "MAX_PKG=23"
 set "ON=(YES)"
 set "OFF=(NO)"
 
@@ -18,7 +17,7 @@ echo.
 echo                                                 \\!//
 echo                                                 (o o)
 echo              -------------------------------oOOo-(_)-oOOo-------------------------------
-echo                                        Scoop Package Manager
+echo                                         Scoop Package Manager
 echo              ---------------------------------------------------------------------------
 echo.
 call :RENDER_COLUMNS ITEM OPT %MAX_PKG%
@@ -218,29 +217,31 @@ if %errorlevel% neq 0 (
 goto :eof
 
 :INIT_PACKAGES
-:: File Managers, Search & Navigation
-set "ITEM1=ripgrep|Ripgrep"
-set "ITEM2=fd|fd-find"
-set "ITEM3=fzf|fzf"
-set "ITEM4=yazi|Yazi"
-set "ITEM5=tre-command|Tre"
-set "ITEM6=everything|Everything"
-set "ITEM7=winmerge|WinMerge"
+set "MAX_PKG=23"
 
-:: Archivers & Compression
-set "ITEM8=7zip|7-Zip"
+:: Web Browsers
+set "ITEM1=brave|Brave"
+set "ITEM2=librewolf|LibreWolf"
+set "ITEM3=tor-browser|Tor Browser"
+
+:: File Managers, Search & Navigation
+set "ITEM4=ripgrep|Ripgrep"
+set "ITEM5=fd|fd-find"
+set "ITEM6=fzf|fzf"
+set "ITEM7=yazi|Yazi"
+set "ITEM8=tre-command|Tre"
+set "ITEM9=everything|Everything"
 
 :: System Info & Benchmarking
-set "ITEM9=btop|btop"
-set "ITEM10=hyperfine|Hyperfine"
-set "ITEM11=hwinfo|HWiNFO"
+set "ITEM10=btop|btop"
+set "ITEM11=hyperfine|Hyperfine"
+set "ITEM12=hwinfo|HWiNFO"
 
 :: System Cleaners
-set "ITEM12=bleachbit|BleachBit"
+set "ITEM13=bleachbit|BleachBit"
 
-:: Network Tools
-set "ITEM13=curl|cURL"
-set "ITEM14=aria2|aria2"
+:: Network & Remote Tools
+set "ITEM14=rustdesk|RustDesk"
 set "ITEM15=ytdlp-interface|yt-dlp Interface"
 
 :: Text Editors
