@@ -421,7 +421,7 @@ goto :eof
 echo.
 echo --------------------------------------------------------------------------------
 echo Type ALL to %~1 everything
-echo Or type the exact name(s) as shown above, separated by commas
+echo Or type the exact name(s) as shown above, separated by spaces
 echo Type 0 to go back
 echo --------------------------------------------------------------------------------
 goto :eof
