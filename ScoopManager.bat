@@ -2,6 +2,7 @@
 setlocal enabledelayedexpansion
 
 call :WHERE_SCOOP
+if %errorlevel% equ 1 exit /b 1
 
 :: Initialize
 set "ON=(YES)"
