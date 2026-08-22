@@ -215,6 +215,9 @@ if %errorlevel% neq 0 (
     echo Installation failed or PATH not updated in this session
     pause & exit /b 1
 )
+
+echo Ading extras buckets
+scoop bucket add extras
 goto :eof
 
 :INIT_PACKAGES
