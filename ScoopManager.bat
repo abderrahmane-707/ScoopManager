@@ -99,14 +99,113 @@ if "%choice%"=="0" goto SCOOP_MENU
 call :PKG_BULK_ACTION "uninstall"
 call :GO & goto SCOOP_MENU
 
-:MORE_PROG
-cls & set "prog=" & set /p prog="Enter program name(s) separated by spaces: "
-if "%prog%"=="" goto MORE_PROG
+:: Search & install packages interactively via a live fzf + scoop-search session
+:MORE_PKG
+cls
+call :WHERE_SCOOP_SEARCH
+if errorlevel 1 goto SCOOP_MENU
+
+call :WHERE_FZF
+if errorlevel 1 goto SCOOP_MENU
+
+set "fzftmp=%TEMP%\scoop_pkg_select_%RANDOM%.txt"
+del "%fzftmp%" >nul 2>&1
+
+set "fzflist=%TEMP%\scoop_pkg_list_%RANDOM%.txt"
+set "rawlist=%TEMP%\scoop_pkg_raw_%RANDOM%.txt"
+scoop-search . > "%rawlist%"
+
+set "curbucket="
+> "%fzflist%" (
+    for /f "usebackq delims=" %%L in ("%rawlist%") do (
+        set "ln=%%L"
+        set "first=!ln:~0,1!"
+        if "!first!"=="'" (
+            for /f "tokens=1,2 delims='" %%A in ("!ln!") do set "curbucket=%%A"
+        ) else if not "!ln!"=="" (
+            for /f "tokens=* delims= " %%A in ("!ln!") do echo !curbucket!/%%A
+        )
+    )
+)
+del "%rawlist%" >nul 2>&1
+
+fzf --multi --ansi --prompt="Search> " --header="Press [TAB] for multi-select | Press [ENTER] to confirm | Press [ESC] to cancel" --bind "tab:toggle+down,shift-tab:toggle+up" < "%fzflist%" > "%fzftmp%"
+
+del "%fzflist%" >nul 2>&1
+
+if not exist "%fzftmp%" (
+    echo. & echo No selection made
+    call :GO & goto SCOOP_MENU
+)
+
+for %%Z in ("%fzftmp%") do if %%~zZ==0 (
+    del "%fzftmp%" >nul 2>&1
+    echo. & echo No selection made
+    call :GO & goto SCOOP_MENU
+)
+
+:: Extract the package name from each selected "bucket/name (version)" line
+set "toInstall="
+for /f "usebackq delims=" %%L in ("%fzftmp%") do (
+    set "line=%%L"
+    set "afterslash="
+    for /f "tokens=1,2 delims=/" %%A in ("!line!") do set "afterslash=%%B"
+    if defined afterslash (
+        for /f "tokens=1" %%A in ("!afterslash!") do set "toInstall=!toInstall! %%A"
+    ) else (
+        for /f "tokens=1" %%A in ("!line!") do set "toInstall=!toInstall! %%A"
+    )
+)
+del "%fzftmp%" >nul 2>&1
+
+if not defined toInstall (
+    echo. & echo No packages selected
+    call :GO & goto SCOOP_MENU
+)
+
+cls & echo Selected packages:
+for %%P in (!toInstall!) do echo     - %%P
+
+echo. & call :CHOICE "Do you want to continue?"
+if errorlevel 2 (
+    echo. & echo The operation was cancelled
+	pause & goto SCOOP_MENU
+)
 
 echo. & call :WHERE_7Z
 call scoop install -k %prog%
 
 call :GO & goto SCOOP_MENU
+
+:WHERE_FZF
+where fzf >nul 2>&1 && exit /b 0
+
+echo fzf is required for interactive package search but is not installed
+call :CHOICE "Do you want to install fzf?"
+if errorlevel 2 exit /b 1
+
+echo. & call scoop install fzf
+where fzf >nul 2>&1
+if %errorlevel% neq 0 (
+    echo Failed to install fzf
+    pause & exit /b 1
+)
+exit /b 0
+
+:WHERE_SCOOP_SEARCH
+where scoop-search >nul 2>&1 && exit /b 0
+
+echo scoop-search is required for fast package search but is not installed
+call :CHOICE "Do you want to install scoop-search?"
+if errorlevel 2 exit /b 1
+
+echo. & call scoop install scoop-search
+where scoop-search >nul 2>&1
+if %errorlevel% neq 0 (
+    echo Failed to install scoop-search
+    pause & exit /b 1
+)
+exit /b 0
 
 :BUCKET_INITIAL
 set "MAX_BUCKET=9"
