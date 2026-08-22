@@ -218,95 +218,92 @@ if %errorlevel% neq 0 (
 goto :eof
 
 :INIT_PACKAGES
-set "MAX_PKG=34"
+set "PKG_COUNT=0"
 
 :: Web Browsers
-set "ITEM1=brave|Brave"
-set "ITEM2=librewolf|LibreWolf"
-set "ITEM3=tor-browser|Tor Browser"
+call :ADD_PKG "brave"             "Brave"
+call :ADD_PKG "librewolf"         "LibreWolf"
+call :ADD_PKG "tor-browser"       "Tor Browser"
 
 :: File Managers, Search & Navigation
-set "ITEM4=ripgrep|Ripgrep"
-set "ITEM5=fd|fd-find"
-set "ITEM6=fzf|fzf"
-set "ITEM7=yazi|Yazi"
-set "ITEM8=tre-command|Tre"
-set "ITEM9=everything|Everything"
+call :ADD_PKG "ripgrep"           "Ripgrep"
+call :ADD_PKG "fd"                "fd-find"
+call :ADD_PKG "fzf"               "fzf"
+call :ADD_PKG "yazi"              "Yazi"
+call :ADD_PKG "tre-command"       "Tre"
+call :ADD_PKG "everything"        "Everything"
 
 :: Archivers & Compression
-set "ITEM10=7zip-zstd|7-Zip Zstandard"
-set "ITEM11=winrar|WinRAR"
-set "ITEM12=peazip|PeaZip"
+call :ADD_PKG "7zip-zstd"         "7-Zip Zstandard"
+call :ADD_PKG "winrar"            "WinRAR"
+call :ADD_PKG "peazip"            "PeaZip"
 
 :: Multi Media
-set "ITEM13=mpc-hc-fork|MPC-HC (Fork)"
-set "ITEM14=xnviewmp|XnView MP"
-set "ITEM15=sumatrapdf|SumatraPDF"
+call :ADD_PKG "mpc-hc-fork"       "MPC-HC (Fork)"
+call :ADD_PKG "xnviewmp"          "XnView MP"
+call :ADD_PKG "sumatrapdf"        "SumatraPDF"
 
 :: Text Editors
-set "ITEM16=vscode|VS Code"
-set "ITEM17=micro|Micro"
-set "ITEM18=notepadplusplus|Notepad++"
+call :ADD_PKG "vscode"            "VS Code"
+call :ADD_PKG "micro"             "Micro"
+call :ADD_PKG "notepadplusplus"   "Notepad++"
 
 :: System Info
-set "ITEM19=btop|btop"
-set "ITEM20=hwinfo|HWiNFO"
-set "ITEM21=duf|duf"
-set "ITEM22=dust|dust"
+call :ADD_PKG "btop"              "btop"
+call :ADD_PKG "hwinfo"            "HWiNFO"
+call :ADD_PKG "duf"               "duf"
+call :ADD_PKG "dust"              "dust"
 
 :: System Cleaners
-set "ITEM23=bleachbit|BleachBit"
+call :ADD_PKG "bleachbit"         "BleachBit"
 
 :: Network, Remote & Downloads
-set "ITEM24=freedownloadmanager|FDM"
-set "ITEM25=ytdlp-interface|yt-dlp Interface"
-set "ITEM26=qbittorrent|qBittorrent"
-set "ITEM27=rustdesk|RustDesk"
+call :ADD_PKG "freedownloadmanager" "FDM"
+call :ADD_PKG "ytdlp-interface"   "yt-dlp Interface"
+call :ADD_PKG "qbittorrent"       "qBittorrent"
+call :ADD_PKG "rustdesk"          "RustDesk"
 
 :: Git Tools
-set "ITEM28=git|Git"
-set "ITEM29=gh|GitHub CLI"
-set "ITEM30=sourcegit|SourceGit"
+call :ADD_PKG "git"               "Git"
+call :ADD_PKG "gh"                "GitHub CLI"
+call :ADD_PKG "sourcegit"         "SourceGit"
 
 :: Dev
-set "ITEM31=mingw|MinGW"
-set "ITEM32=llvm|LLVM"
-set "ITEM33=cppcheck|Cppcheck"
-set "ITEM34=hyperfine|Hyperfine"
+call :ADD_PKG "mingw"             "MinGW"
+call :ADD_PKG "llvm"              "LLVM"
+call :ADD_PKG "cppcheck"          "Cppcheck"
+call :ADD_PKG "hyperfine"         "Hyperfine"
+
+set "MAX_PKG=%PKG_COUNT%"
+goto :eof
+
+:ADD_PKG
+set /a "PKG_COUNT+=1"
+set "pname=%~2"
+set "ITEM%PKG_COUNT%=%~1|%pname%"
 goto :eof
 
 :INIT_BUCKET
-set "MAX_BUCKET=11"
+set "BUCKET_COUNT=0"
 
-:: Main general purpose applications
-set "BITEM1=main|Main"
+call :ADD_BUCKET "main"        "Main"
+call :ADD_BUCKET "extras"      "Extras"
+call :ADD_BUCKET "versions"    "Versions"
+call :ADD_BUCKET "java"        "Java"
+call :ADD_BUCKET "php"         "PHP"
+call :ADD_BUCKET "games"       "Games"
+call :ADD_BUCKET "nerd-fonts"  "Nerd Fonts"
+call :ADD_BUCKET "nonportable" "Non-Portable"
+call :ADD_BUCKET "sysinternals" "Sysinternals"
+call :ADD_BUCKET "nirsoft"     "NirSoft"
 
-:: Extra utilities
-set "BITEM2=extras|Extras"
+set "MAX_BUCKET=%BUCKET_COUNT%"
+goto :eof
 
-:: Beta, or legacy versions
-set "BITEM3=versions|Versions"
-
-:: Java Development Kits (JDKs), JREs
-set "BITEM4=java|Java"
-
-:: PHP runtimes, extensions, and web development tooling
-set "BITEM5=php|PHP"
-
-:: Open-source and freeware games
-set "BITEM6=games|Games"
-
-:: Developer fonts patched with icons for terminals and editors
-set "BITEM7=nerd-fonts|Nerd Fonts"
-
-:: Software requiring system installation
-set "BITEM8=nonportable|Non-Portable"
-
-:: Sysinternals tools
-set "BITEM9=sysinternals|Sysinternals"
-
-:: NirSoft utilities
-set "BITEM10=nirsoft|NirSoft"
+:ADD_BUCKET
+set /a "BUCKET_COUNT+=1"
+set "bname=%~2"
+set "BITEM%BUCKET_COUNT%=%~1|%bname%"
 goto :eof
 
 :RENDER_COLUMNS
