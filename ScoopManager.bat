@@ -8,8 +8,8 @@ if %errorlevel% equ 1 exit /b 1
 set "ON=(YES)"
 set "OFF=(NO)"
 
-:: Initialize packages
 call :INIT_PACKAGES
+call :DESELECT_ALL_PKG
 
 :: Main interface
 :SCOOP_MENU
@@ -213,8 +213,8 @@ if %errorlevel% neq 0 (
 exit /b 0
 
 :BUCKET_INITIAL
-set "MAX_BUCKET=9"
 call :INIT_BUCKET
+call :DESELECT_ALL_BUCKETS
 
 :BUCKET_MENU
 cls & echo.
@@ -288,7 +288,7 @@ call :PRINT_ACTION_PROMPT "remove"
 
 set "choice=" & set /p "choice=--> "
 if "%choice%"=="" goto REMOVE_BUCKETS
-if "!choice!"=="0" goto BUCKET_MENU
+if "%choice%"=="0" goto BUCKET_MENU
 
 if /i "%choice%"=="ALL" (
     echo. & echo. & call :CHOICE "Are you sure you've removed all buckets?"
@@ -299,7 +299,7 @@ if /i "%choice%"=="ALL" (
 	echo. & echo Removing all buckets
     for /f "skip=2 tokens=1" %%B in ('call scoop bucket list 2^>nul') do (
         if not "%%B"=="" (
-            echo Removing bucket: %%B
+            echo. & echo Removing bucket: %%B
             call scoop bucket rm %%B
         )
     )
@@ -314,11 +314,11 @@ call :GO & goto BUCKET_MENU
 :WHERE_SCOOP
 where scoop >nul 2>&1 && goto :eof
 
-echo Scoop is not installed.
-choice /C YN /M "Do you want to download and install Scoop? [Y/n]"
+echo Scoop is not installed
+call :CHOICE "Do you want to download and install Scoop?"
 if errorlevel 2 exit /b 1
 
-echo Installing Scoop via PowerShell...
+echo. & echo Installing Scoop via PowerShell...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')"
 
 :: Update current session PATH so 'where scoop' works immediately without restarting CMD
@@ -501,10 +501,10 @@ if defined invalid (
 goto :eof
 
 :PKG_BULK_ACTION
-if /i "!choice!"=="ALL" (
+call :WHERE_7Z
+if /i "%choice%"=="ALL" (
     if /i "%~1"=="upgrade" (
         echo Updating all packages
-        echo. & call :WHERE_7Z
         call scoop update -k * && call scoop cleanup *
     ) else (
         echo Removing all packages
