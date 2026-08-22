@@ -264,34 +264,37 @@ call :DESELECT_ALL_PKG
 goto :eof
 
 :INIT_BUCKET
+set "MAX_BUCKET=11"
+
+:: Main general purpose applications
+set "BITEM1=main|Main"
+
 :: Extra utilities
-set "BITEM1=extras|Extras"
+set "BITEM2=extras|Extras"
 
 :: Beta, or legacy versions
-set "BITEM2=versions|Versions"
+set "BITEM3=versions|Versions"
 
 :: Java Development Kits (JDKs), JREs
-set "BITEM3=java|Java"
+set "BITEM4=java|Java"
 
 :: PHP runtimes, extensions, and web development tooling
-set "BITEM4=php|PHP"
+set "BITEM5=php|PHP"
 
 :: Open-source and freeware games
-set "BITEM5=games|Games"
+set "BITEM6=games|Games"
 
 :: Developer fonts patched with icons for terminals and editors
-set "BITEM6=nerd-fonts|Nerd Fonts"
+set "BITEM7=nerd-fonts|Nerd Fonts"
 
 :: Software requiring system installation
-set "BITEM7=nonportable|Non-Portable"
+set "BITEM8=nonportable|Non-Portable"
 
 :: Sysinternals tools
-set "BITEM8=sysinternals|Sysinternals"
+set "BITEM9=sysinternals|Sysinternals"
 
 :: NirSoft utilities
-set "BITEM9=nirsoft|NirSoft"
-
-call :DESELECT_ALL_BUCKETS
+set "BITEM10=nirsoft|NirSoft"
 goto :eof
 
 :RENDER_COLUMNS
