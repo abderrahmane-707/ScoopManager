@@ -281,36 +281,39 @@ call scoop update
 call :GO & goto BUCKET_MENU
 
 :REMOVE_BUCKETS
-cls & echo Added buckets
+cls & echo Installed buckets
 call scoop bucket list
+
+set "installedBuckets="
+for /f "skip=2 tokens=1" %%B in ('scoop bucket list 2^>nul') do (
+    set "bkt=%%B"
+    if defined bkt if "!bkt:~0,1!" neq "-" set "installedBuckets=!installedBuckets! %%B"
+)
+if not defined installedBuckets (
+    echo. & echo No buckets are currently installed
+    pause & goto BUCKET_MENU
+)
 
 call :PRINT_ACTION_PROMPT "remove"
 
 set "choice=" & set /p "choice=--> "
-if "%choice%"=="" goto REMOVE_BUCKETS
 if "%choice%"=="0" goto BUCKET_MENU
 
+set "tormBuckets="
 if /i "%choice%"=="ALL" (
-    echo. & echo. & call :CHOICE "Are you sure you've removed all buckets?"
-    if errorlevel 2 (
-        echo. & echo The operation was cancelled
-	    pause & goto BUCKET_MENU
-    )
-	echo. & echo Removing all buckets
-    for /f "skip=2 tokens=1" %%B in ('call scoop bucket list 2^>nul') do (
-        if not "%%B"=="" (
-            echo. & echo Removing bucket: %%B
-            call scoop bucket rm %%B
+    set "tormBuckets=%installedBuckets%"
+) else (
+    set "raw=%choice:,= %"
+    for %%G in (!raw!) do (
+        set "found="
+        for %%I in (%installedBuckets%) do if /i "%%G"=="%%I" set "found=1"
+        if defined found (
+            set "tormBuckets=!tormBuckets! %%G"
+        ) else (
+            echo     - "%%G": is not an installed bucket - skipping
         )
     )
-) else (
-    for %%G in (!choice:,= !) do (
-        echo. & echo Removing bucket: %%G
-        call scoop bucket rm %%G
-    )
 )
-call :GO & goto BUCKET_MENU
-
 :WHERE_SCOOP
 where scoop >nul 2>&1 && goto :eof
 
