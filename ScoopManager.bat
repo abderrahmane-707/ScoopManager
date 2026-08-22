@@ -443,6 +443,10 @@ if %errorlevel% equ 0 (
 set "HAS_7Z=1"
 goto :eof
 
+:CHOICE
+choice /C YN /N /M "%~1 [Y/n]: "
+goto :eof
+
 :GO
 echo. & echo The operation is done.
 pause & goto :eof
