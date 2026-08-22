@@ -319,7 +319,7 @@ call :CHOICE "Do you want to download and install Scoop?"
 if errorlevel 2 exit /b 1
 
 echo. & echo Installing Scoop via PowerShell...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force; [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072; iex (New-Object System.Net.WebClient).DownloadString('https://get.scoop.sh')"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force; irm get.scoop.sh | iex"
 
 :: Update current session PATH so 'where scoop' works immediately without restarting CMD
 set "PATH=%USERPROFILE%\scoop\shims;%PATH%"
