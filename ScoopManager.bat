@@ -51,7 +51,6 @@ call :MULTI_INPUT OPT %MAX_PKG%
 goto SCOOP_MENU
 
 :RUN_PACKAGES
-cls
 :: Collect every selected program into a single list, then process it in one call
 set "toInstall="
 for /L %%i in (1,1,%MAX_PKG%) do (
@@ -65,8 +64,14 @@ if not defined toInstall (
     call :GO & goto SCOOP_MENU
 )
 
-echo Installing the following packages:
+cls & echo Selected packages:
 for %%P in (!toInstall!) do echo     - %%P
+
+echo. & call :CHOICE "Do you want to continue?"
+if errorlevel 2 (
+    echo. & echo The operation was cancelled
+	pause & goto SCOOP_MENU
+)
 
 echo. & call :WHERE_7Z
 call scoop install -k !toInstall!
@@ -173,7 +178,7 @@ if errorlevel 2 (
 )
 
 echo. & call :WHERE_7Z
-call scoop install -k %prog%
+call scoop install -k !toInstall!
 
 call :GO & goto SCOOP_MENU
 
@@ -246,7 +251,6 @@ call :MULTI_INPUT BOPT %MAX_BUCKET%
 goto BUCKET_MENU
 
 :ADD_BUCKETS
-cls
 set "toAddBuckets="
 for /L %%i in (1,1,%MAX_BUCKET%) do (
     if "!BOPT%%i!"=="%ON%" (
@@ -259,8 +263,14 @@ if not defined toAddBuckets (
     call :GO & goto BUCKET_MENU
 )
 
-echo Adding the following buckets:
+cls & echo Selected buckets:
 for %%B in (!toAddBuckets!) do echo     - %%B
+
+echo. & call :CHOICE "Do you want to continue?"
+if errorlevel 2 (
+    echo. & echo The operation was cancelled
+	pause & goto BUCKET_MENU
+)
 
 echo. & for %%B in (!toAddBuckets!) do call scoop bucket add %%B
 call :GO & call :DESELECT_ALL_BUCKETS & goto BUCKET_MENU
@@ -280,8 +290,13 @@ set "choice=" & set /p "choice=--> "
 if "%choice%"=="" goto REMOVE_BUCKETS
 if "!choice!"=="0" goto BUCKET_MENU
 
-if /i "!choice!"=="ALL" (
-    echo. & echo Removing all Added buckets
+if /i "%choice%"=="ALL" (
+    echo. & echo. & call :CHOICE "Are you sure you've removed all buckets?"
+    if errorlevel 2 (
+        echo. & echo The operation was cancelled
+	    pause & goto BUCKET_MENU
+    )
+	echo. & echo Removing all buckets
     for /f "skip=2 tokens=1" %%B in ('call scoop bucket list 2^>nul') do (
         if not "%%B"=="" (
             echo Removing bucket: %%B
@@ -506,11 +521,16 @@ if /i "!choice!"=="ALL" (
     set "targets=!choice:,= !"
     echo.
     if /i "%~1"=="upgrade" (
-	    echo Updating: !targets!
-        echo. & call :WHERE_7Z
+	    echo Updating the following packages:
+		for %%P in (!targets!) do echo     - %%P
+		echo. & call :CHOICE "Do you want to continue?"
+		if errorlevel 2 (echo The operation was cancelled & pause & goto SCOOP_MENU)
         call scoop update -k !targets! && call scoop cleanup !targets!
     ) else (
-	    echo Removing: !targets!
+	    echo Removing the following packages:
+        for %%P in (!targets!) do echo     - %%P
+        echo. & call :CHOICE "Do you want to continue?"
+        if errorlevel 2 (echo The operation was cancelled & pause & goto SCOOP_MENU)
         call scoop uninstall !targets! --purge
     )
 )
