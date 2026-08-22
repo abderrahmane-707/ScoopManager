@@ -218,7 +218,7 @@ if %errorlevel% neq 0 (
 goto :eof
 
 :INIT_PACKAGES
-set "MAX_PKG=23"
+set "MAX_PKG=34"
 
 :: Web Browsers
 set "ITEM1=brave|Brave"
@@ -233,35 +233,46 @@ set "ITEM7=yazi|Yazi"
 set "ITEM8=tre-command|Tre"
 set "ITEM9=everything|Everything"
 
-:: System Info & Benchmarking
-set "ITEM10=btop|btop"
-set "ITEM11=hyperfine|Hyperfine"
-set "ITEM12=hwinfo|HWiNFO"
+:: Archivers & Compression
+set "ITEM10=7zip-zstd|7-Zip Zstandard"
+set "ITEM11=winrar|WinRAR"
+set "ITEM12=peazip|PeaZip"
 
-:: System Cleaners
-set "ITEM13=bleachbit|BleachBit"
-
-:: Network & Remote Tools
-set "ITEM14=rustdesk|RustDesk"
-set "ITEM15=ytdlp-interface|yt-dlp Interface"
+:: Multi Media
+set "ITEM13=mpc-hc-fork|MPC-HC (Fork)"
+set "ITEM14=xnviewmp|XnView MP"
+set "ITEM15=sumatrapdf|SumatraPDF"
 
 :: Text Editors
 set "ITEM16=vscode|VS Code"
 set "ITEM17=micro|Micro"
+set "ITEM18=notepadplusplus|Notepad++"
+
+:: System Info
+set "ITEM19=btop|btop"
+set "ITEM20=hwinfo|HWiNFO"
+set "ITEM21=duf|duf"
+set "ITEM22=dust|dust"
+
+:: System Cleaners
+set "ITEM23=bleachbit|BleachBit"
+
+:: Network, Remote & Downloads
+set "ITEM24=freedownloadmanager|FDM"
+set "ITEM25=ytdlp-interface|yt-dlp Interface"
+set "ITEM26=qbittorrent|qBittorrent"
+set "ITEM27=rustdesk|RustDesk"
 
 :: Git Tools
-set "ITEM18=git|Git"
-set "ITEM19=gh|GitHub CLI"
-set "ITEM20=sourcegit|SourceGit"
+set "ITEM28=git|Git"
+set "ITEM29=gh|GitHub CLI"
+set "ITEM30=sourcegit|SourceGit"
 
-:: Compilers
-set "ITEM21=mingw|MinGw"
-set "ITEM22=llvm|LLVM"
-
-:: Debuggers
-set "ITEM23=cppcheck|Cppcheck"
-
-call :DESELECT_ALL_PKG
+:: Dev
+set "ITEM31=mingw|MinGW"
+set "ITEM32=llvm|LLVM"
+set "ITEM33=cppcheck|Cppcheck"
+set "ITEM34=hyperfine|Hyperfine"
 goto :eof
 
 :INIT_BUCKET
