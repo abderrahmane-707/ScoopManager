@@ -447,6 +447,129 @@ goto :eof
 set /a "BUCKET_COUNT+=1"
 set "bname=%~2"
 set "BITEM%BUCKET_COUNT%=%~1|%bname%"
+
+:PKG_BULK_ACTION
+:: %1 = "upgrade" or "uninstall"
+:: %2 = (optional, upgrade only) path to an already-captured "scoop status" output file
+echo.
+if not defined choice (
+    echo No package selected
+    exit /b 1
+)
+set "action=%~1"
+if /i "!action!"=="upgrade" (set "verb=Updating") else (set "verb=Removing")
+
+:: installed packages list
+set "listfile="
+set "cleanup_list="
+if /i "!action!"=="uninstall" set "listfile=%~2"
+if not defined listfile (
+    set "listfile=%temp%\scoop_list_%random%.txt"
+    call scoop list > "!listfile!" 2>&1
+    set "cleanup_list=1"
+)
+call :COLLECT_NAMES "!listfile!" installed
+if defined cleanup_list del "!listfile!" >nul 2>&1
+
+:: packages with available updates
+set "hasupdate= "
+if /i "!action!"=="upgrade" (
+    set "statusfile=%~2"
+    set "cleanup_status="
+    if not defined statusfile (
+        set "statusfile=%temp%\scoop_status_%random%.txt"
+        call scoop status > "!statusfile!" 2>&1
+        set "cleanup_status=1"
+    )
+    call :COLLECT_NAMES "!statusfile!" hasupdate
+    if defined cleanup_status del "!statusfile!" >nul 2>&1
+)
+
+set "cmd_targets="
+if /i "!choice!"=="ALL" (
+    if /i "!action!"=="upgrade" (
+        if "!hasupdate!"==" " (
+            echo No updates are available
+            exit /b 1
+        )
+        set "targets=!hasupdate!"
+        set "cmd_targets=*"
+    ) else (
+        if "!installed!"==" " (
+            echo No packages are currently installed
+            exit /b 1
+        )
+        set "targets=!installed!"
+        set "cmd_targets=!installed!"
+    )
+    echo !verb! all packages:
+    for %%P in (!targets!) do echo     - %%P
+) else (
+    set "requested=!choice:,= !"
+    set "targets="
+    set "missing="
+    set "noupdate="
+    for %%P in (!requested!) do (
+        set "isinstalled="
+        for %%X in (!installed!) do if /i "%%X"=="%%P" set "isinstalled=1"
+        if not defined isinstalled (
+            set "missing=!missing! %%P"
+        ) else if /i "!action!"=="upgrade" (
+            set "hasupd="
+            for %%X in (!hasupdate!) do if /i "%%X"=="%%P" set "hasupd=1"
+            if not defined hasupd (
+                set "noupdate=!noupdate! %%P"
+            ) else (
+                set "targets=!targets! %%P"
+            )
+        ) else (
+            set "targets=!targets! %%P"
+        )
+    )
+    if defined missing (
+        echo The following packages are not installed and will be skipped:
+        for %%M in (!missing!) do echo     - %%M
+    )
+    if defined noupdate (
+        echo The following packages are already up to date and will be skipped:
+        for %%N in (!noupdate!) do echo     - %%N
+    )
+    if not defined targets (
+        echo. & echo None of the selected packages need action
+        exit /b 1
+    )
+    echo !verb! the following packages:
+    for %%P in (!targets!) do echo     - %%P
+    set "cmd_targets=!targets!"
+)
+
+:PKG_CONFIRM
+echo. & call :CHOICE "Do you want to continue?"
+if errorlevel 2 exit /b 2
+if /i "!action!"=="upgrade" (
+    call scoop update -k !cmd_targets! && call scoop cleanup !cmd_targets!
+) else (
+    call scoop uninstall !cmd_targets! --purge
+)
+exit /b 0
+
+:COLLECT_NAMES
+:: %1 = path to file (output of "scoop list" or "scoop status")
+:: %2 = name of the variable to receive the space-separated first-column names
+set "src_file=%~1"
+set "names= "
+set "started="
+for /f "usebackq delims=" %%P in ("!src_file!") do (
+    set "ln=%%P"
+    if defined started (
+        if not "!ln!"=="" for /f "tokens=1" %%A in ("!ln!") do set "names=!names!%%A "
+    ) else (
+        if "!ln:~0,4!"=="----" set "started=1"
+    )
+)
+set "%~2=!names!"
+exit /b
+
 goto :eof
 
 :RENDER_COLUMNS
@@ -523,42 +646,6 @@ for %%G in (%tokens%) do (
 if defined invalid (
     echo. & echo Invalid or out-of-range input:!invalid!
     pause
-)
-goto :eof
-
-:PKG_BULK_ACTION
-call :WHERE_7Z
-if /i "%choice%"=="ALL" (
-    if /i "%~1"=="upgrade" (
-        echo Updating all packages
-        call scoop update -k * && call scoop cleanup *
-    ) else (
-        echo Removing all packages
-        set "toRemove="
-        for /f "skip=2 tokens=1" %%P in ('call scoop list 2^>nul') do (
-            if not "%%P"=="" set "toRemove=!toRemove! %%P"
-        )
-        if defined toRemove (
-            call scoop uninstall !toRemove! --purge
-        )
-    )
-) else (
-    :: Collect every requested name into one list, then process it in a single call
-    set "targets=!choice:,= !"
-    echo.
-    if /i "%~1"=="upgrade" (
-	    echo Updating the following packages:
-		for %%P in (!targets!) do echo     - %%P
-		echo. & call :CHOICE "Do you want to continue?"
-		if errorlevel 2 (echo The operation was cancelled & pause & goto SCOOP_MENU)
-        call scoop update -k !targets! && call scoop cleanup !targets!
-    ) else (
-	    echo Removing the following packages:
-        for %%P in (!targets!) do echo     - %%P
-        echo. & call :CHOICE "Do you want to continue?"
-        if errorlevel 2 (echo The operation was cancelled & pause & goto SCOOP_MENU)
-        call scoop uninstall !targets! --purge
-    )
 )
 goto :eof
 
