@@ -146,7 +146,7 @@ echo Tip: You can select multiple items, e.g. 1,3,5 or 1-5 or 1-3,7,10-12
 set "choice=" & set /p "choice=--> Select option(s) and press [S] to Start: "
 
 if "%choice%"=="" goto BUCKET_MENU
-if "%choice%"=="0" (call :DESELECT_ALL_PKG & goto SCOOP_MENU)
+if "%choice%"=="0" goto SCOOP_MENU
 if /i "%choice%"=="A" (call :SELECT_ALL_BUCKETS & goto BUCKET_MENU)
 if /i "%choice%"=="D" (call :DESELECT_ALL_BUCKETS & goto BUCKET_MENU)
 if /i "%choice%"=="U" goto UPDATE_BUCKETS
@@ -350,8 +350,8 @@ if errorlevel 2 (
     exit /b 2
 )
 
-echo. & call :WHERE_7Z
-call scoop install -k !toInstall!
+call :WHERE_7Z
+echo. & call scoop install -k !toInstall!
 
 call :GO
 exit /b 0
@@ -631,10 +631,11 @@ echo. & echo %~3
 call :CHOICE "Do you want to install it?"
 if errorlevel 2 exit /b 1
 
-echo. & call scoop install %~1
+call :WHERE_7Z
+echo. & call scoop install -k %~1 
 where %~1 >nul 2>&1
 if %errorlevel% neq 0 (
-    echo. & echo Failed to install %~1
+    echo. & echo Failed to install %~1 or PATH not updated in this session
     pause & exit /b 1
 )
 exit /b 0
