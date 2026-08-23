@@ -110,44 +110,8 @@ if errorlevel 1 goto SCOOP_MENU
 call :ENSURE_TOOL "fzf" "fzf (required for interactive package search)"
 if errorlevel 1 goto SCOOP_MENU
 
-set "fzftmp=%TEMP%\scoop_pkg_select.txt"
-set "fzflist=%TEMP%\scoop_pkg_list.txt"
-set "rawlist=%TEMP%\scoop_pkg_raw.txt"
-
-del "%fzftmp%" "%fzflist%" "%rawlist%" >nul 2>&1
-
-call scoop-search . > "%rawlist%" 2>nul
-
-set "curbucket="
-> "%fzflist%" (
-    for /f "usebackq delims=" %%L in ("%rawlist%") do (
-        set "ln=%%L"
-        set "first=!ln:~0,1!"
-        if "!first!"=="'" (
-            for /f "tokens=1,2 delims='" %%A in ("!ln!") do set "curbucket=%%A"
-        ) else if not "!ln!"=="" (
-            for /f "tokens=* delims= " %%A in ("!ln!") do echo !curbucket!/%%A
-        )
-    )
-)
-
-fzf --multi --ansi --prompt="Search> " --header="Press [TAB] for multi-select | Press [ENTER] to confirm | Press [ESC] to cancel" --bind "tab:toggle+down,shift-tab:toggle+up" < "%fzflist%" > "%fzftmp%"
-if %errorlevel% equ 130  goto SCOOP_MENU
-
-:: Extract the package name from each selected "bucket/name (version)" line
-set "toInstall="
-for /f "usebackq delims=" %%L in ("%fzftmp%") do (
-    set "line=%%L"
-    set "afterslash="
-    for /f "tokens=1,2 delims=/" %%A in ("!line!") do set "afterslash=%%B"
-    if defined afterslash (
-        for /f "tokens=1" %%A in ("!afterslash!") do set "toInstall=!toInstall! %%A"
-    ) else (
-        for /f "tokens=1" %%A in ("!line!") do set "toInstall=!toInstall! %%A"
-    )
-)
-
-del "%fzftmp%" "%fzflist%" "%rawlist%" >nul 2>&1
+call :RUN_FZF_SELECTOR toInstall
+if errorlevel 1 goto SCOOP_MENU
 
 call :INSTALL_PKG_LIST
 if errorlevel 1 (pause & goto SCOOP_MENU)
@@ -554,6 +518,54 @@ for /f "usebackq delims=" %%P in ("!src_file!") do (
 )
 set "%~2=!names!"
 exit /b
+
+:RUN_FZF_SELECTOR
+set "%~1="
+set "fzftmp=%TEMP%\fzf_selected_%RANDOM%.txt"
+set "fzflist=%TEMP%\scoop_pkg_list_%RANDOM%.txt"
+set "rawlist=%TEMP%\scoop_pkg_raw_%RANDOM%.txt"
+
+del "%fzftmp%" "%fzflist%" "%rawlist%" >nul 2>&1
+
+:: Data retrieval and list preparation
+call scoop-search . > "%rawlist%" 2>nul
+
+set "curbucket="
+> "%fzflist%" (
+    for /f "usebackq delims=" %%L in ("%rawlist%") do (
+        set "ln=%%L"
+        set "first=!ln:~0,1!"
+        if "!first!"=="'" (
+            for /f "tokens=1,2 delims='" %%A in ("!ln!") do set "curbucket=%%A"
+        ) else if not "!ln!"=="" (
+            for /f "tokens=* delims= " %%A in ("!ln!") do echo !curbucket!/%%A
+        )
+    )
+)
+
+fzf --multi --ansi --prompt="Search> " --header="Press [TAB] for multi-select | Press [ENTER] to confirm | Press [ESC] to cancel" --bind "tab:toggle+down,shift-tab:toggle+up" < "%fzflist%" > "%fzftmp%"
+if errorlevel 1 (
+    del "%fzftmp%" "%fzflist%" "%rawlist%" >nul 2>&1
+    exit /b 1
+)
+
+:: Extracting the specified package names
+set "selected_pkgs="
+for /f "usebackq delims=" %%L in ("%fzftmp%") do (
+    set "line=%%L"
+    set "afterslash="
+    for /f "tokens=1,2 delims=/" %%A in ("!line!") do set "afterslash=%%B"
+    if defined afterslash (
+        for /f "tokens=1" %%A in ("!afterslash!") do set "selected_pkgs=!selected_pkgs! %%A"
+    ) else (
+        for /f "tokens=1" %%A in ("!line!") do set "selected_pkgs=!selected_pkgs! %%A"
+    )
+)
+
+:: Clean temporary files and save the result
+del "%fzftmp%" "%fzflist%" "%rawlist%" >nul 2>&1
+set "%~1=%selected_pkgs%"
+exit /b 0
 
 :PRINT_ACTION_PROMPT
 echo --------------------------------------------------------------------------------
