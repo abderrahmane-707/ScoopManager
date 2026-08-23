@@ -2,7 +2,7 @@
 setlocal enabledelayedexpansion
 
 call :WHERE_SCOOP
-if %errorlevel% equ 1 exit /b 1
+if errorlevel 1 exit /b 1
 
 :: Initialize
 set "ON=(YES)"
@@ -35,7 +35,7 @@ echo                    [A] Select All            [D] Deselect All            [0
 echo.
 
 echo Tip: You can select multiple items, e.g. 1,3,5 or 1-5 or 1-3,7,10-12
-echo. & set "choice=" & set /p "choice=--> Select option(s) and press [S] to Start: "
+set "choice=" & set /p "choice=--> Select option(s) and press [S] to Start: "
 
 if "%choice%"=="" goto SCOOP_MENU
 if "%choice%"=="0" exit /b
@@ -59,24 +59,12 @@ for /L %%i in (1,1,%MAX_PKG%) do (
     )
 )
 
-if not defined toInstall (
-    echo. & echo No packages selected
-    call :GO & goto SCOOP_MENU
+call :INSTALL_PKG_LIST
+if errorlevel 1 (
+    pause & goto SCOOP_MENU
+) else (
+    call :DESELECT_ALL_PKG & goto SCOOP_MENU
 )
-
-cls & echo Selected packages:
-for %%P in (!toInstall!) do echo     - %%P
-
-echo. & call :CHOICE "Do you want to continue?"
-if errorlevel 2 (
-    echo. & echo The operation was cancelled
-	pause & goto SCOOP_MENU
-)
-
-echo. & call :WHERE_7Z
-call scoop install -k !toInstall!
-
-call :GO & call :DESELECT_ALL_PKG & goto SCOOP_MENU
 
 :UPDATE_MENU
 cls
@@ -127,21 +115,21 @@ if errorlevel 2 (
 )
 call :GO & goto SCOOP_MENU
 
-:: Search & install packages interactively via a live fzf + scoop-search session
 :MORE_PKG
 cls
-call :WHERE_SCOOP_SEARCH
+call :ENSURE_TOOL "scoop-search" "scoop-search (required for fast package search)"
 if errorlevel 1 goto SCOOP_MENU
 
-call :WHERE_FZF
+call :ENSURE_TOOL "fzf" "fzf (required for interactive package search)"
 if errorlevel 1 goto SCOOP_MENU
 
-set "fzftmp=%TEMP%\scoop_pkg_select_%RANDOM%.txt"
-del "%fzftmp%" >nul 2>&1
+set "fzftmp=%TEMP%\scoop_pkg_select.txt"
+set "fzflist=%TEMP%\scoop_pkg_list.txt"
+set "rawlist=%TEMP%\scoop_pkg_raw.txt"
 
-set "fzflist=%TEMP%\scoop_pkg_list_%RANDOM%.txt"
-set "rawlist=%TEMP%\scoop_pkg_raw_%RANDOM%.txt"
-scoop-search . > "%rawlist%"
+del "%fzftmp%" "%fzflist%" "%rawlist%" >nul 2>&1
+
+call scoop-search . > "%rawlist%" 2>nul
 
 set "curbucket="
 > "%fzflist%" (
@@ -155,22 +143,9 @@ set "curbucket="
         )
     )
 )
-del "%rawlist%" >nul 2>&1
 
 fzf --multi --ansi --prompt="Search> " --header="Press [TAB] for multi-select | Press [ENTER] to confirm | Press [ESC] to cancel" --bind "tab:toggle+down,shift-tab:toggle+up" < "%fzflist%" > "%fzftmp%"
-
-del "%fzflist%" >nul 2>&1
-
-if not exist "%fzftmp%" (
-    echo. & echo No selection made
-    call :GO & goto SCOOP_MENU
-)
-
-for %%Z in ("%fzftmp%") do if %%~zZ==0 (
-    del "%fzftmp%" >nul 2>&1
-    echo. & echo No selection made
-    call :GO & goto SCOOP_MENU
-)
+if %errorlevel% equ 130  goto SCOOP_MENU
 
 :: Extract the package name from each selected "bucket/name (version)" line
 set "toInstall="
@@ -184,56 +159,15 @@ for /f "usebackq delims=" %%L in ("%fzftmp%") do (
         for /f "tokens=1" %%A in ("!line!") do set "toInstall=!toInstall! %%A"
     )
 )
-del "%fzftmp%" >nul 2>&1
 
-if not defined toInstall (
-    echo. & echo No packages selected
-    call :GO & goto SCOOP_MENU
+del "%fzftmp%" "%fzflist%" "%rawlist%" >nul 2>&1
+
+call :INSTALL_PKG_LIST
+if errorlevel 1 (
+    pause & goto SCOOP_MENU
+) else (
+    call :DESELECT_ALL_PKG & goto SCOOP_MENU
 )
-
-cls & echo Selected packages:
-for %%P in (!toInstall!) do echo     - %%P
-
-echo. & call :CHOICE "Do you want to continue?"
-if errorlevel 2 (
-    echo. & echo The operation was cancelled
-	pause & goto SCOOP_MENU
-)
-
-echo. & call :WHERE_7Z
-call scoop install -k !toInstall!
-
-call :GO & goto SCOOP_MENU
-
-:WHERE_FZF
-where fzf >nul 2>&1 && exit /b 0
-
-echo fzf is required for interactive package search but is not installed
-call :CHOICE "Do you want to install fzf?"
-if errorlevel 2 exit /b 1
-
-echo. & call scoop install fzf
-where fzf >nul 2>&1
-if %errorlevel% neq 0 (
-    echo Failed to install fzf
-    pause & exit /b 1
-)
-exit /b 0
-
-:WHERE_SCOOP_SEARCH
-where scoop-search >nul 2>&1 && exit /b 0
-
-echo scoop-search is required for fast package search but is not installed
-call :CHOICE "Do you want to install scoop-search?"
-if errorlevel 2 exit /b 1
-
-echo. & call scoop install scoop-search
-where scoop-search >nul 2>&1
-if %errorlevel% neq 0 (
-    echo Failed to install scoop-search
-    pause & exit /b 1
-)
-exit /b 0
 
 :BUCKET_INITIAL
 call :INIT_BUCKET
@@ -260,7 +194,7 @@ echo                    [A] Select All            [D] Deselect All            [0
 echo.
 
 echo Tip: You can select multiple items, e.g. 1,3,5 or 1-5 or 1-3,7,10-12
-echo. & set "choice=" & set /p "choice=--> Select option(s) and press [S] to Start: "
+set "choice=" & set /p "choice=--> Select option(s) and press [S] to Start: "
 
 if "%choice%"=="" goto BUCKET_MENU
 if "%choice%"=="0" (call :DESELECT_ALL_PKG & goto SCOOP_MENU)
@@ -281,25 +215,15 @@ for /L %%i in (1,1,%MAX_BUCKET%) do (
     )
 )
 
-if not defined toAddBuckets (
-    echo No buckets selected
-    call :GO & goto BUCKET_MENU
+call :ADD_BUCKETS_LIST
+if errorlevel 1 (
+    pause & goto BUCKET_MENU
+) else (
+    call :DESELECT_ALL_BUCKETS & goto BUCKET_MENU
 )
-
-cls & echo Selected buckets:
-for %%B in (!toAddBuckets!) do echo     - %%B
-
-echo. & call :CHOICE "Do you want to continue?"
-if errorlevel 2 (
-    echo. & echo The operation was cancelled
-	pause & goto BUCKET_MENU
-)
-
-echo. & for %%B in (!toAddBuckets!) do call scoop bucket add %%B
-call :GO & call :DESELECT_ALL_BUCKETS & goto BUCKET_MENU
 
 :UPDATE_BUCKETS
-cls & echo Updating all Buckets
+cls & echo Updating all installed Buckets
 call scoop update
 call :GO & goto BUCKET_MENU
 
@@ -308,10 +232,16 @@ cls & echo Installed buckets
 call scoop bucket list
 
 set "installedBuckets="
-for /f "skip=2 tokens=1" %%B in ('scoop bucket list 2^>nul') do (
-    set "bkt=%%B"
-    if defined bkt if "!bkt:~0,1!" neq "-" set "installedBuckets=!installedBuckets! %%B"
+set "started="
+for /f "usebackq delims=" %%B in (`call scoop bucket list 2^>nul`) do (
+    set "ln=%%B"
+    if defined started (
+        if not "!ln!"=="" for /f "tokens=1" %%A in ("!ln!") do set "installedBuckets=!installedBuckets! %%A"
+    ) else (
+        echo !ln!| findstr /r "^----" >nul && set "started=1"
+    )
 )
+
 if not defined installedBuckets (
     echo. & echo No buckets are currently installed
     pause & goto BUCKET_MENU
@@ -337,29 +267,31 @@ if /i "%choice%"=="ALL" (
         )
     )
 )
-:WHERE_SCOOP
-where scoop >nul 2>&1 && goto :eof
 
-echo Scoop is not installed
-call :CHOICE "Do you want to download and install Scoop?"
-if errorlevel 2 exit /b 1
-
-echo. & echo Installing Scoop via PowerShell...
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force; irm get.scoop.sh | iex"
-
-:: Update current session PATH so 'where scoop' works immediately without restarting CMD
-set "PATH=%USERPROFILE%\scoop\shims;%PATH%"
-
-where scoop >nul 2>&1
-if %errorlevel% neq 0 (
-    echo Installation failed or PATH not updated in this session
-    pause & exit /b 1
+echo.
+if not defined tormBuckets (
+    echo No valid buckets selected
+    pause & goto BUCKET_MENU
 )
 
-echo Ading extras buckets
-scoop bucket add extras
-goto :eof
+echo Removing the following buckets:
+for %%G in (%tormBuckets%) do echo     - %%G
 
+echo. & call :CHOICE "Do you want to continue?"
+if errorlevel 2 (
+    echo. & echo The operation was cancelled
+    pause & goto BUCKET_MENU
+)
+
+for %%G in (%tormBuckets%) do (
+    echo. & echo Removing bucket: %%G
+    call scoop bucket rm %%G
+)
+
+call :GO & goto BUCKET_MENU
+
+
+:: Functions
 :INIT_PACKAGES
 set "PKG_COUNT=0"
 
@@ -420,12 +352,6 @@ call :ADD_PKG "hyperfine"         "Hyperfine"
 set "MAX_PKG=%PKG_COUNT%"
 goto :eof
 
-:ADD_PKG
-set /a "PKG_COUNT+=1"
-set "pname=%~2"
-set "ITEM%PKG_COUNT%=%~1|%pname%"
-goto :eof
-
 :INIT_BUCKET
 set "BUCKET_COUNT=0"
 
@@ -443,10 +369,84 @@ call :ADD_BUCKET "nirsoft"     "NirSoft"
 set "MAX_BUCKET=%BUCKET_COUNT%"
 goto :eof
 
-:ADD_BUCKET
-set /a "BUCKET_COUNT+=1"
-set "bname=%~2"
-set "BITEM%BUCKET_COUNT%=%~1|%bname%"
+:WHERE_SCOOP
+where scoop >nul 2>&1 && exit /b 0
+
+echo Scoop is not installed
+call :CHOICE "Do you want to download and install Scoop?"
+if errorlevel 2 (
+    echo Scoop is required for this script to work
+	pause & exit /b 2
+)
+
+echo. & echo Installing Scoop via PowerShell...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force; irm get.scoop.sh | iex"
+
+:: Update current session PATH so 'where scoop' works immediately without restarting CMD
+set "PATH=%USERPROFILE%\scoop\shims;%PATH%"
+
+where scoop >nul 2>&1
+if %errorlevel% neq 0 (
+    echo Installation failed or PATH not updated in this session
+    pause & exit /b 1
+)
+
+echo Adding extras buckets
+scoop bucket add extras
+exit /b 0
+
+:WHERE_7Z
+if "%HAS_7Z%"=="1" goto :eof
+where 7z.exe >nul 2>&1
+if %errorlevel% equ 0 (
+    call scoop config use_external_7zip true >nul 2>&1
+) else (
+    call scoop config use_external_7zip false >nul 2>&1
+)
+
+set "HAS_7Z=1"
+goto :eof
+
+:INSTALL_PKG_LIST
+if not defined toInstall (
+    echo. & echo No packages selected
+    exit /b 1
+)
+
+cls & echo Selected packages:
+for %%P in (!toInstall!) do echo     - %%P
+
+echo. & call :CHOICE "Do you want to continue?"
+if errorlevel 2 (
+    echo. & echo The operation was cancelled
+    exit /b 2
+)
+
+echo. & call :WHERE_7Z
+call scoop install -k !toInstall!
+
+call :GO
+exit /b 0
+
+:ADD_BUCKETS_LIST
+if not defined toAddBuckets (
+    echo. & echo No buckets selected
+    exit /b 1
+)
+
+cls & echo Selected buckets:
+for %%B in (!toAddBuckets!) do echo     - %%B
+
+echo. & call :CHOICE "Do you want to continue?"
+if errorlevel 2 (
+    echo. & echo The operation was cancelled
+    exit /b 2
+)
+
+echo. & for %%B in (!toAddBuckets!) do call scoop bucket add %%B
+
+call :GO
+exit /b 0
 
 :PKG_BULK_ACTION
 :: %1 = "upgrade" or "uninstall"
@@ -570,6 +570,12 @@ for /f "usebackq delims=" %%P in ("!src_file!") do (
 set "%~2=!names!"
 exit /b
 
+:PRINT_ACTION_PROMPT
+echo --------------------------------------------------------------------------------
+echo Type ALL to %~1 everything
+echo Or type the exact name(s) as shown above, separated by spaces
+echo Type 0 to go back
+echo --------------------------------------------------------------------------------
 goto :eof
 
 :RENDER_COLUMNS
@@ -596,6 +602,51 @@ for /L %%r in (1,1,!ROWS!) do (
     )
     echo                  !line!
 )
+goto :eof
+
+:ENSURE_TOOL
+:: %1 = scoop package
+:: %2 =  description shown to the user
+where %~1 >nul 2>&1 && exit /b 0
+
+echo. & echo %~3
+call :CHOICE "Do you want to install it?"
+if errorlevel 2 exit /b 1
+
+echo. & call scoop install %~1
+where %~1 >nul 2>&1
+if %errorlevel% neq 0 (
+    echo. & echo Failed to install %~1
+    pause & exit /b 1
+)
+exit /b 0
+
+:SELECT_ALL_PKG
+for /L %%i in (1,1,%MAX_PKG%) do set "OPT%%i=%ON%"
+goto :eof
+
+:DESELECT_ALL_PKG
+for /L %%i in (1,1,%MAX_PKG%) do set "OPT%%i=%OFF%"
+goto :eof
+
+:SELECT_ALL_BUCKETS
+for /L %%i in (1,1,%MAX_BUCKET%) do set "BOPT%%i=%ON%"
+goto :eof
+
+:DESELECT_ALL_BUCKETS
+for /L %%i in (1,1,%MAX_BUCKET%) do set "BOPT%%i=%OFF%"
+goto :eof
+
+:ADD_PKG
+set /a "PKG_COUNT+=1"
+set "pname=%~2"
+set "ITEM%PKG_COUNT%=%~1|%pname%"
+goto :eof
+
+:ADD_BUCKET
+set /a "BUCKET_COUNT+=1"
+set "bname=%~2"
+set "BITEM%BUCKET_COUNT%=%~1|%bname%"
 goto :eof
 
 :MULTI_INPUT
@@ -647,43 +698,6 @@ if defined invalid (
     echo. & echo Invalid or out-of-range input:!invalid!
     pause
 )
-goto :eof
-
-:SELECT_ALL_PKG
-for /L %%i in (1,1,%MAX_PKG%) do set "OPT%%i=%ON%"
-goto :eof
-
-:DESELECT_ALL_PKG
-for /L %%i in (1,1,%MAX_PKG%) do set "OPT%%i=%OFF%"
-goto :eof
-
-:SELECT_ALL_BUCKETS
-for /L %%i in (1,1,%MAX_BUCKET%) do set "BOPT%%i=%ON%"
-goto :eof
-
-:DESELECT_ALL_BUCKETS
-for /L %%i in (1,1,%MAX_BUCKET%) do set "BOPT%%i=%OFF%"
-goto :eof
-
-:PRINT_ACTION_PROMPT
-echo.
-echo --------------------------------------------------------------------------------
-echo Type ALL to %~1 everything
-echo Or type the exact name(s) as shown above, separated by spaces
-echo Type 0 to go back
-echo --------------------------------------------------------------------------------
-goto :eof
-
-:WHERE_7Z
-if "%HAS_7Z%"=="1" goto :eof
-where 7z.exe >nul 2>&1
-if %errorlevel% equ 0 (
-    call scoop config use_external_7zip true >nul 2>&1
-) else (
-    call scoop config use_external_7zip false >nul 2>&1
-)
-
-set "HAS_7Z=1"
 goto :eof
 
 :CHOICE
