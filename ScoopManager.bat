@@ -60,15 +60,14 @@ for /L %%i in (1,1,%MAX_PKG%) do (
 )
 
 call :INSTALL_PKG_LIST
-if errorlevel 1 (
-    pause & goto SCOOP_MENU
-) else (
-    call :DESELECT_ALL_PKG & goto SCOOP_MENU
-)
+if errorlevel 1 (pause & goto SCOOP_MENU)
+
+call :DESELECT_ALL_PKG & goto SCOOP_MENU
 
 :UPDATE_MENU
 cls
 set "statusfile=%temp%\scoop_status.txt"
+del "%statusfile%" >nul 2>&1
 
 call scoop update
 call scoop status > "%statusfile%" 2>&1
@@ -77,24 +76,18 @@ type "%statusfile%"
 call :PRINT_ACTION_PROMPT "update"
 
 set "choice=" & set /p "choice=--> "
-if "%choice%"=="0" (del "%statusfile%" >nul 2>&1 & goto SCOOP_MENU)
+if "%choice%"=="0" goto SCOOP_MENU
 
 call :WHERE_7Z
 call :PKG_BULK_ACTION "upgrade" "%statusfile%"
-del "%statusfile%" >nul 2>&1
+if errorlevel 1 (pause & goto SCOOP_MENU)
 
-if errorlevel 2 (
-    echo. & echo The operation was cancelled
-    pause & goto SCOOP_MENU
-) else if errorlevel 1 (
-    pause & goto SCOOP_MENU
-)
 call :GO & goto SCOOP_MENU
-
 
 :REMOVE_MENU
 cls
 set "listfile=%temp%\scoop_list.txt"
+del "%listfile%" >nul 2>&1
 
 call scoop list > "%listfile%" 2>&1
 type "%listfile%"
@@ -102,17 +95,11 @@ type "%listfile%"
 call :PRINT_ACTION_PROMPT "remove"
 
 set "choice=" & set /p "choice=--> "
-if "%choice%"=="0" (del "%listfile%" >nul 2>&1 & goto SCOOP_MENU)
+if "%choice%"=="0" goto SCOOP_MENU
 
 call :PKG_BULK_ACTION "uninstall" "%listfile%"
-del "%listfile%" >nul 2>&1
+if errorlevel 1 (pause & goto SCOOP_MENU)
 
-if errorlevel 2 (
-    echo. & echo The operation was cancelled
-    pause & goto SCOOP_MENU
-) else if errorlevel 1 (
-    pause & goto SCOOP_MENU
-)
 call :GO & goto SCOOP_MENU
 
 :MORE_PKG
@@ -163,11 +150,9 @@ for /f "usebackq delims=" %%L in ("%fzftmp%") do (
 del "%fzftmp%" "%fzflist%" "%rawlist%" >nul 2>&1
 
 call :INSTALL_PKG_LIST
-if errorlevel 1 (
-    pause & goto SCOOP_MENU
-) else (
-    call :DESELECT_ALL_PKG & goto SCOOP_MENU
-)
+if errorlevel 1 (pause & goto SCOOP_MENU)
+
+call :DESELECT_ALL_PKG & goto SCOOP_MENU
 
 :BUCKET_INITIAL
 call :INIT_BUCKET
@@ -545,7 +530,7 @@ if /i "!choice!"=="ALL" (
 
 :PKG_CONFIRM
 echo. & call :CHOICE "Do you want to continue?"
-if errorlevel 2 exit /b 2
+if errorlevel 2 (echo. & echo The operation was cancelled & exit /b 2)
 if /i "!action!"=="upgrade" (
     call scoop update -k !cmd_targets! && call scoop cleanup !cmd_targets!
 ) else (
