@@ -307,13 +307,42 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-ExecutionPolicy -Exe
 set "PATH=%USERPROFILE%\scoop\shims;%PATH%"
 
 where scoop >nul 2>&1
-if %errorlevel% neq 0 (
-    echo Installation failed or PATH not updated in this session
+if errorlevel 1 (
+    echo. & echo Installation failed or PATH not updated in this session
     pause & exit /b 1
 )
 
-echo Adding extras buckets
-scoop bucket add extras
+echo. & call :CHOICE "Adding extras and versions buckets? (necessary to download all the packages on the list)"
+if %errorlevel% equ 1 (
+    echo. & echo Adding extras and versions buckets
+    call scoop bucket add extras
+    call scoop bucket add versions
+)
+
+where git >nul 2>&1 || (echo. & call :CHOICE "Installing Git? (necessary for updating Scoop and bucket)")
+if %errorlevel% equ 1 (
+    echo. & echo Installing Git
+    call scoop install git
+)
+
+where aria2c >nul 2>&1 || (echo. & call :CHOICE "Installing aria2? (for multi-connection downloads)")
+if %errorlevel% equ 1 (
+    echo. & echo Installing aria2
+    call scoop install aria2 && (
+        echo. & echo Tweaking aria2 settings
+        for %%C in (
+            "aria2-enabled=true"
+            "aria2-warning-enabled=false"
+            "aria2-split=8"
+            "aria2-max-connection-per-server=8"
+        ) do (
+            for /f "tokens=1,2 delims==" %%K in (%%C) do (
+                call scoop config %%K %%L
+            )
+        )
+    )
+)
+
 exit /b 0
 
 :WHERE_7Z
