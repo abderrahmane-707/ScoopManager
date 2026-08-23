@@ -258,6 +258,7 @@ call :ADD_ITEM PKG_COUNT ITEM "freedownloadmanager" "FDM"
 call :ADD_ITEM PKG_COUNT ITEM "ytdlp-interface"   "yt-dlp Interface"
 call :ADD_ITEM PKG_COUNT ITEM "qbittorrent"       "qBittorrent"
 call :ADD_ITEM PKG_COUNT ITEM "rustdesk"          "RustDesk"
+call :ADD_ITEM PKG_COUNT ITEM "aria2" "aria2"       "aria2"
 
 :: Git Tools
 call :ADD_ITEM PKG_COUNT ITEM "git"               "Git"
