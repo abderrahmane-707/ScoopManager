@@ -320,7 +320,18 @@ if %errorlevel% equ 1 (
 where git >nul 2>&1 || (echo. & call :CHOICE "Installing Git? (necessary for updating Scoop and bucket)")
 if %errorlevel% equ 1 (
     echo. & echo Installing Git
-    call scoop install git
+    call scoop install git && (
+        echo. & echo Tweaking Git settings
+        for %%C in (
+            "init.defaultBranch=main"
+            "core.autocrlf=true"
+            "pull.rebase=false"
+        ) do (
+            for /f "tokens=1,2 delims==" %%K in (%%C) do (
+                call git config --global %%K %%L
+            )
+        )
+    )
 )
 
 where aria2c >nul 2>&1 || (echo. & call :CHOICE "Installing aria2? (for multi-connection downloads)")
