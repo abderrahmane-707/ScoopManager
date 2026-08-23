@@ -51,7 +51,7 @@ call :MULTI_INPUT OPT %MAX_PKG%
 goto SCOOP_MENU
 
 :RUN_PACKAGES
-:: Collect every selected program into a single list, then process it in one call
+:: Collect every selected packages into a single list, then process it in one call
 call :COLLECT_SELECTED ITEM OPT %MAX_PKG% toInstall
 
 call :INSTALL_PKG_LIST
@@ -122,7 +122,7 @@ cls & echo.
 echo                                                 \\!//
 echo                                                 (o o)
 echo              -------------------------------oOOo-(_)-oOOo-------------------------------
-echo                                          Scoop Buckets Manager
+echo                                            Buckets Manager
 echo              ---------------------------------------------------------------------------
 echo.
 
@@ -217,91 +217,88 @@ call :GO & goto BUCKET_MENU
 set "PKG_COUNT=0"
 
 :: Web Browsers
-call :ADD_ITEM PKG_COUNT ITEM "brave"             "Brave"
-call :ADD_ITEM PKG_COUNT ITEM "librewolf"         "LibreWolf"
-call :ADD_ITEM PKG_COUNT ITEM "tor-browser"       "Tor Browser"
+call :ADD_ITEM PKG_COUNT ITEM "brave"               "Brave"
+call :ADD_ITEM PKG_COUNT ITEM "librewolf"           "LibreWolf"
+call :ADD_ITEM PKG_COUNT ITEM "tor-browser"         "Tor Browser"
 
 :: File Managers, Search & Navigation
-call :ADD_ITEM PKG_COUNT ITEM "ripgrep"           "Ripgrep"
-call :ADD_ITEM PKG_COUNT ITEM "fd"                "fd-find"
-call :ADD_ITEM PKG_COUNT ITEM "fzf"               "fzf"
-call :ADD_ITEM PKG_COUNT ITEM "yazi"              "Yazi"
-call :ADD_ITEM PKG_COUNT ITEM "tre-command"       "Tre"
-call :ADD_ITEM PKG_COUNT ITEM "everything"        "Everything"
+call :ADD_ITEM PKG_COUNT ITEM "ripgrep"             "Ripgrep"
+call :ADD_ITEM PKG_COUNT ITEM "fd"                  "fd-find"
+call :ADD_ITEM PKG_COUNT ITEM "fzf"                 "fzf"
+call :ADD_ITEM PKG_COUNT ITEM "yazi"                "Yazi"
+call :ADD_ITEM PKG_COUNT ITEM "tre-command"         "Tre"
+call :ADD_ITEM PKG_COUNT ITEM "everything"          "Everything"
 
 :: Archivers & Compression
-call :ADD_ITEM PKG_COUNT ITEM "7zip-zstd"         "7-Zip Zstandard"
-call :ADD_ITEM PKG_COUNT ITEM "winrar"            "WinRAR"
-call :ADD_ITEM PKG_COUNT ITEM "peazip"            "PeaZip"
+call :ADD_ITEM PKG_COUNT ITEM "7zip-zstd"           "7-Zip Zstandard"
+call :ADD_ITEM PKG_COUNT ITEM "winrar"              "WinRAR"
+call :ADD_ITEM PKG_COUNT ITEM "peazip"              "PeaZip"
 
 :: Multi Media
-call :ADD_ITEM PKG_COUNT ITEM "mpc-hc-fork"       "MPC-HC (Fork)"
-call :ADD_ITEM PKG_COUNT ITEM "xnviewmp"          "XnView MP"
-call :ADD_ITEM PKG_COUNT ITEM "sumatrapdf"        "SumatraPDF"
+call :ADD_ITEM PKG_COUNT ITEM "mpc-hc-fork"         "MPC-HC (Fork)"
+call :ADD_ITEM PKG_COUNT ITEM "xnviewmp"            "XnView MP"
+call :ADD_ITEM PKG_COUNT ITEM "sumatrapdf"          "SumatraPDF"
 
 :: Text Editors
-call :ADD_ITEM PKG_COUNT ITEM "vscode"            "VS Code"
-call :ADD_ITEM PKG_COUNT ITEM "micro"             "Micro"
-call :ADD_ITEM PKG_COUNT ITEM "notepadplusplus"   "Notepad++"
+call :ADD_ITEM PKG_COUNT ITEM "vscode"              "VS Code"
+call :ADD_ITEM PKG_COUNT ITEM "micro"               "Micro"
+call :ADD_ITEM PKG_COUNT ITEM "notepadplusplus"     "Notepad++"
 
 :: System Info
-call :ADD_ITEM PKG_COUNT ITEM "btop"              "btop"
-call :ADD_ITEM PKG_COUNT ITEM "hwinfo"            "HWiNFO"
-call :ADD_ITEM PKG_COUNT ITEM "duf"               "duf"
-call :ADD_ITEM PKG_COUNT ITEM "dust"              "dust"
+call :ADD_ITEM PKG_COUNT ITEM "btop"                "btop"
+call :ADD_ITEM PKG_COUNT ITEM "hwinfo"              "HWiNFO"
+call :ADD_ITEM PKG_COUNT ITEM "duf"                 "duf"
+call :ADD_ITEM PKG_COUNT ITEM "dust"                "dust"
 
 :: System Cleaners
-call :ADD_ITEM PKG_COUNT ITEM "bleachbit"         "BleachBit"
+call :ADD_ITEM PKG_COUNT ITEM "bleachbit"           "BleachBit"
 
 :: Network, Remote & Downloads
 call :ADD_ITEM PKG_COUNT ITEM "freedownloadmanager" "FDM"
-call :ADD_ITEM PKG_COUNT ITEM "ytdlp-interface"   "yt-dlp Interface"
-call :ADD_ITEM PKG_COUNT ITEM "qbittorrent"       "qBittorrent"
-call :ADD_ITEM PKG_COUNT ITEM "rustdesk"          "RustDesk"
 call :ADD_ITEM PKG_COUNT ITEM "aria2" "aria2"       "aria2"
+call :ADD_ITEM PKG_COUNT ITEM "ytdlp-interface"     "yt-dlp Interface"
+call :ADD_ITEM PKG_COUNT ITEM "qbittorrent"         "qBittorrent"
+call :ADD_ITEM PKG_COUNT ITEM "rustdesk"            "RustDesk"
 
 :: Git Tools
-call :ADD_ITEM PKG_COUNT ITEM "git"               "Git"
-call :ADD_ITEM PKG_COUNT ITEM "gh"                "GitHub CLI"
-call :ADD_ITEM PKG_COUNT ITEM "sourcegit"         "SourceGit"
+call :ADD_ITEM PKG_COUNT ITEM "git"                 "Git"
+call :ADD_ITEM PKG_COUNT ITEM "gh"                  "GitHub CLI"
+call :ADD_ITEM PKG_COUNT ITEM "sourcegit"           "SourceGit"
 
 :: Dev
-call :ADD_ITEM PKG_COUNT ITEM "mingw"             "MinGW"
-call :ADD_ITEM PKG_COUNT ITEM "llvm"              "LLVM"
-call :ADD_ITEM PKG_COUNT ITEM "cppcheck"          "Cppcheck"
-call :ADD_ITEM PKG_COUNT ITEM "hyperfine"         "Hyperfine"
+call :ADD_ITEM PKG_COUNT ITEM "mingw"               "MinGW"
+call :ADD_ITEM PKG_COUNT ITEM "llvm"                "LLVM"
+call :ADD_ITEM PKG_COUNT ITEM "cppcheck"            "Cppcheck"
+call :ADD_ITEM PKG_COUNT ITEM "hyperfine"           "Hyperfine"
 
 set "MAX_PKG=%PKG_COUNT%"
 goto :eof
 
 :INIT_BUCKET
 set "BUCKET_COUNT=0"
-
-call :ADD_ITEM BUCKET_COUNT BITEM "main"        "Main"
-call :ADD_ITEM BUCKET_COUNT BITEM "extras"      "Extras"
-call :ADD_ITEM BUCKET_COUNT BITEM "versions"    "Versions"
-call :ADD_ITEM BUCKET_COUNT BITEM "java"        "Java"
-call :ADD_ITEM BUCKET_COUNT BITEM "php"         "PHP"
-call :ADD_ITEM BUCKET_COUNT BITEM "games"       "Games"
-call :ADD_ITEM BUCKET_COUNT BITEM "nerd-fonts"  "Nerd Fonts"
-call :ADD_ITEM BUCKET_COUNT BITEM "nonportable" "Non-Portable"
-call :ADD_ITEM BUCKET_COUNT BITEM "sysinternals" "Sysinternals"
-call :ADD_ITEM BUCKET_COUNT BITEM "nirsoft"     "NirSoft"
+call :ADD_ITEM BUCKET_COUNT BITEM "main"            "Main"
+call :ADD_ITEM BUCKET_COUNT BITEM "extras"          "Extras"
+call :ADD_ITEM BUCKET_COUNT BITEM "versions"        "Versions"
+call :ADD_ITEM BUCKET_COUNT BITEM "java"            "Java"
+call :ADD_ITEM BUCKET_COUNT BITEM "php"             "PHP"
+call :ADD_ITEM BUCKET_COUNT BITEM "games"           "Games"
+call :ADD_ITEM BUCKET_COUNT BITEM "nerd-fonts"      "Nerd Fonts"
+call :ADD_ITEM BUCKET_COUNT BITEM "nonportable"     "Non-Portable"
+call :ADD_ITEM BUCKET_COUNT BITEM "sysinternals"    "Sysinternals"
+call :ADD_ITEM BUCKET_COUNT BITEM "nirsoft"         "NirSoft"
 
 set "MAX_BUCKET=%BUCKET_COUNT%"
 goto :eof
 
 :WHERE_SCOOP
 where scoop >nul 2>&1 && exit /b 0
-
-echo Scoop is not installed
-call :CHOICE "Do you want to download and install Scoop?"
+call :CHOICE "Scoop is not installed. Do you want to install it?"
 if errorlevel 2 (
-    echo Scoop is required for this script to work
+    echo. & echo Scoop is required for this script to work
 	pause & exit /b 2
 )
 
-echo. & echo Installing Scoop via PowerShell...
+echo. & echo Installing Scoop via PowerShell
 powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force; irm get.scoop.sh | iex"
 
 :: Update current session PATH so 'where scoop' works immediately without restarting CMD
