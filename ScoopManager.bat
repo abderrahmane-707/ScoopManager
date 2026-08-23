@@ -180,16 +180,8 @@ call :GO & goto BUCKET_MENU
 cls & echo Installed buckets
 call scoop bucket list
 
-set "installedBuckets="
-set "started="
-for /f "usebackq delims=" %%B in (`call scoop bucket list 2^>nul`) do (
-    set "ln=%%B"
-    if defined started (
-        if not "!ln!"=="" for /f "tokens=1" %%A in ("!ln!") do set "installedBuckets=!installedBuckets! %%A"
-    ) else (
-        echo !ln!| findstr /r "^----" >nul && set "started=1"
-    )
-)
+:: Retrieve a list of installed repositories
+call :GET_INSTALLED_BUCKETS "installedBuckets"
 
 if not defined installedBuckets (
     echo. & echo No buckets are currently installed
@@ -201,21 +193,8 @@ call :PRINT_ACTION_PROMPT "remove"
 set "choice=" & set /p "choice=--> "
 if "%choice%"=="0" goto BUCKET_MENU
 
-set "tormBuckets="
-if /i "%choice%"=="ALL" (
-    set "tormBuckets=%installedBuckets%"
-) else (
-    set "raw=%choice:,= %"
-    for %%G in (!raw!) do (
-        set "found="
-        for %%I in (%installedBuckets%) do if /i "%%G"=="%%I" set "found=1"
-        if defined found (
-            set "tormBuckets=!tormBuckets! %%G"
-        ) else (
-            echo     - "%%G": is not an installed bucket - skipping
-        )
-    )
-)
+:: Processing user choices and translating them into a list
+call :PARSE_BUCKET_SELECTION "%choice%" "%installedBuckets%" tormBuckets
 
 echo.
 if not defined tormBuckets (
@@ -565,6 +544,48 @@ for /f "usebackq delims=" %%L in ("%fzftmp%") do (
 :: Clean temporary files and save the result
 del "%fzftmp%" "%fzflist%" "%rawlist%" >nul 2>&1
 set "%~1=%selected_pkgs%"
+exit /b 0
+
+:GET_INSTALLED_BUCKETS
+set "%~1="
+set "buckets="
+set "started="
+
+for /f "usebackq delims=" %%B in (`call scoop bucket list 2^>nul`) do (
+    set "ln=%%B"
+    if defined started (
+        if not "!ln!"=="" for /f "tokens=1" %%A in ("!ln!") do set "buckets=!buckets! %%A"
+    ) else (
+        echo !ln!| findstr /r "^----" >nul && set "started=1"
+    )
+)
+
+set "%~1=%buckets%"
+exit /b 0
+
+:PARSE_BUCKET_SELECTION
+set "%~3="
+set "userInput=%~1"
+set "available=%~2"
+set "validated="
+
+if /i "%userInput%"=="ALL" (
+    set "%~3=%available%"
+    exit /b 0
+)
+
+set "raw=%userInput:,= %"
+for %%G in (!raw!) do (
+    set "found="
+    for %%I in (%available%) do if /i "%%G"=="%%I" set "found=1"
+    if defined found (
+        set "validated=!validated! %%G"
+    ) else (
+        echo     - "%%G": is not an installed bucket - skipping
+    )
+)
+
+set "%~3=%validated%"
 exit /b 0
 
 :PRINT_ACTION_PROMPT
