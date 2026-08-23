@@ -79,29 +79,52 @@ call scoop install -k !toInstall!
 call :GO & call :DESELECT_ALL_PKG & goto SCOOP_MENU
 
 :UPDATE_MENU
-cls & echo Checking available updates
-call scoop update && call scoop status
+cls
+set "statusfile=%temp%\scoop_status.txt"
+
+call scoop update
+call scoop status > "%statusfile%" 2>&1
+type "%statusfile%"
 
 call :PRINT_ACTION_PROMPT "update"
 
 set "choice=" & set /p "choice=--> "
-if "%choice%"=="" goto UPDATE_MENU
-if "%choice%"=="0" goto SCOOP_MENU
+if "%choice%"=="0" (del "%statusfile%" >nul 2>&1 & goto SCOOP_MENU)
 
-call :PKG_BULK_ACTION "upgrade"
+call :WHERE_7Z
+call :PKG_BULK_ACTION "upgrade" "%statusfile%"
+del "%statusfile%" >nul 2>&1
+
+if errorlevel 2 (
+    echo. & echo The operation was cancelled
+    pause & goto SCOOP_MENU
+) else if errorlevel 1 (
+    pause & goto SCOOP_MENU
+)
 call :GO & goto SCOOP_MENU
+
 
 :REMOVE_MENU
 cls
-call scoop list
+set "listfile=%temp%\scoop_list.txt"
+
+call scoop list > "%listfile%" 2>&1
+type "%listfile%"
 
 call :PRINT_ACTION_PROMPT "remove"
 
 set "choice=" & set /p "choice=--> "
-if "%choice%"=="" goto REMOVE_MENU
-if "%choice%"=="0" goto SCOOP_MENU
+if "%choice%"=="0" (del "%listfile%" >nul 2>&1 & goto SCOOP_MENU)
 
-call :PKG_BULK_ACTION "uninstall"
+call :PKG_BULK_ACTION "uninstall" "%listfile%"
+del "%listfile%" >nul 2>&1
+
+if errorlevel 2 (
+    echo. & echo The operation was cancelled
+    pause & goto SCOOP_MENU
+) else if errorlevel 1 (
+    pause & goto SCOOP_MENU
+)
 call :GO & goto SCOOP_MENU
 
 :: Search & install packages interactively via a live fzf + scoop-search session
