@@ -255,7 +255,7 @@ call :ADD_ITEM PKG_COUNT ITEM "bleachbit"           "BleachBit"
 
 :: Network, Remote & Downloads
 call :ADD_ITEM PKG_COUNT ITEM "freedownloadmanager" "FDM"
-call :ADD_ITEM PKG_COUNT ITEM "aria2" "aria2"       "aria2"
+call :ADD_ITEM PKG_COUNT ITEM "aria2"               "aria2"
 call :ADD_ITEM PKG_COUNT ITEM "ytdlp-interface"     "yt-dlp Interface"
 call :ADD_ITEM PKG_COUNT ITEM "qbittorrent"         "qBittorrent"
 call :ADD_ITEM PKG_COUNT ITEM "rustdesk"            "RustDesk"
@@ -641,7 +641,7 @@ goto :eof
 :: %2 =  description shown to the user
 where %~1 >nul 2>&1 && exit /b 0
 
-echo. & echo %~3
+echo. & echo %~2
 call :CHOICE "Do you want to install it?"
 if errorlevel 2 exit /b 1
 
@@ -668,6 +668,56 @@ set /a "cnt+=1"
 call set "%1=%cnt%"
 set "%2%cnt%=%~3|%~4"
 goto :eof
+
+:MULTI_INPUT
+set "prefix=%~1"
+set "max_count=%~2"
+set "invalid="
+set "tokens=!choice:,= !"
+
+for %%G in (%tokens%) do (
+    set "tok=%%G"
+    set "matched=0"
+    set "noHyphen=!tok:-=!"
+
+    if not "!tok!"=="!noHyphen!" (
+        set "rangeStart=" & set "rangeEnd="
+        for /f "tokens=1,2 delims=-" %%X in ("!tok!") do (
+            set "rangeStart=%%X"
+            set "rangeEnd=%%Y"
+        )
+        set "isNum1=1" & for /f "delims=0123456789" %%C in ("!rangeStart!") do set "isNum1=0"
+        set "isNum2=1" & for /f "delims=0123456789" %%C in ("!rangeEnd!") do set "isNum2=0"
+
+        if defined rangeStart if defined rangeEnd if "!isNum1!!isNum2!"=="11" (
+            if !rangeStart! geq 1 if !rangeEnd! leq !max_count! if !rangeStart! leq !rangeEnd! (
+                for /L %%N in (!rangeStart!,1,!rangeEnd!) do (
+                    for %%V in (%prefix%%%N) do (
+                        if "!%%V!"=="%ON%" (set "%%V=%OFF%") else (set "%%V=%ON%")
+                    )
+                )
+                set "matched=1"
+            )
+        )
+    ) else (
+        set "isNum=1" & for /f "delims=0123456789" %%C in ("!tok!") do set "isNum=0"
+        if "!isNum!"=="1" if defined tok (
+            if !tok! geq 1 if !tok! leq !max_count! (
+                for %%V in (%prefix%!tok!) do (
+                    if "!%%V!"=="%ON%" (set "%%V=%OFF%") else (set "%%V=%ON%")
+                )
+                set "matched=1"
+            )
+        )
+    )
+
+    if "!matched!"=="0" set "invalid=!invalid! !tok!"
+)
+
+if defined invalid (
+    echo. & echo Invalid or out-of-range input:!invalid!
+    pause
+)
 
 :CHOICE
 choice /C YN /N /M "%~1 [Y/n]: "
