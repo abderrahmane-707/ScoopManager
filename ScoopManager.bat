@@ -355,15 +355,15 @@ if %errorlevel% equ 1 (
 exit /b 0
 
 :WHERE_7Z
-if "%HAS_7Z%"=="1" goto :eof
-where 7z.exe >nul 2>&1
-if %errorlevel% equ 0 (
-    call scoop config use_external_7zip true >nul 2>&1
-) else (
-    call scoop config use_external_7zip false >nul 2>&1
+if not defined HAS_7Z (
+    where 7z.exe >nul 2>&1
+    if errorlevel 1 (
+        call scoop config use_external_7zip false >nul 2>&1
+    ) else (
+        call scoop config use_external_7zip true >nul 2>&1
+    )
+    set "HAS_7Z=1"
 )
-
-set "HAS_7Z=1"
 exit /b
 
 :INSTALL_PKG_LIST
