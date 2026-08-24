@@ -57,7 +57,7 @@ call :COLLECT_SELECTED ITEM OPT %MAX_PKG% toInstall
 call :INSTALL_PKG_LIST
 if errorlevel 1 (pause & goto SCOOP_MENU)
 
-call :TOGGLE_ALL OPT %MAX_PKG% OFF & goto SCOOP_MENU
+call :GO & call :TOGGLE_ALL OPT %MAX_PKG% OFF & goto SCOOP_MENU
 
 :UPDATE_MENU
 cls
@@ -111,7 +111,7 @@ if errorlevel 1 goto SCOOP_MENU
 call :INSTALL_PKG_LIST
 if errorlevel 1 (pause & goto SCOOP_MENU)
 
-call :TOGGLE_ALL OPT %MAX_PKG% OFF & goto SCOOP_MENU
+call :GO & goto SCOOP_MENU
 
 :BUCKET_INITIAL
 call :INIT_BUCKET
@@ -383,8 +383,6 @@ if errorlevel 2 (
 
 call :WHERE_7Z
 echo. & call scoop install -k !toInstall!
-
-call :GO
 exit /b 0
 
 :ADD_BUCKETS_LIST
@@ -506,9 +504,9 @@ if /i "!choice!"=="ALL" (
 echo. & call :CHOICE "Do you want to continue?"
 if errorlevel 2 (echo. & echo The operation was cancelled & exit /b 2)
 if /i "!action!"=="upgrade" (
-    call scoop update -k !cmd_targets! && call scoop cleanup !cmd_targets!
+    echo. & call scoop update -k !cmd_targets! && call scoop cleanup !cmd_targets!
 ) else (
-    call scoop uninstall !cmd_targets! --purge
+    echo. & call scoop uninstall !cmd_targets! --purge
 )
 exit /b 0
 
@@ -653,7 +651,7 @@ goto :eof
 where %~1 >nul 2>&1 && exit /b 0
 
 echo. & echo %~2
-call :CHOICE "Do you want to install it?"
+echo. & call :CHOICE "Do you want to install it?"
 if errorlevel 2 exit /b 1
 
 call :WHERE_7Z
