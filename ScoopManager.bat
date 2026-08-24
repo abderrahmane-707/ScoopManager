@@ -727,6 +727,7 @@ if defined invalid (
     echo. & echo Invalid or out-of-range input:!invalid!
     pause
 )
+goto :eof
 
 :CHOICE
 choice /C YN /N /M "%~1 [Y/n]: "
