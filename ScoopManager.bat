@@ -272,7 +272,7 @@ call :ADD_ITEM PKG_COUNT ITEM "cppcheck"            "Cppcheck"
 call :ADD_ITEM PKG_COUNT ITEM "hyperfine"           "Hyperfine"
 
 set "MAX_PKG=%PKG_COUNT%"
-goto :eof
+exit /b
 
 :INIT_BUCKET
 set "BUCKET_COUNT=0"
@@ -288,7 +288,7 @@ call :ADD_ITEM BUCKET_COUNT BITEM "sysinternals"    "Sysinternals"
 call :ADD_ITEM BUCKET_COUNT BITEM "nirsoft"         "NirSoft"
 
 set "MAX_BUCKET=%BUCKET_COUNT%"
-goto :eof
+exit /b
 
 :WHERE_SCOOP
 where scoop >nul 2>&1 && exit /b 0
@@ -364,7 +364,7 @@ if %errorlevel% equ 0 (
 )
 
 set "HAS_7Z=1"
-goto :eof
+exit /b
 
 :INSTALL_PKG_LIST
 if not defined toInstall (
@@ -536,7 +536,7 @@ for /L %%i in (1,1,%~3) do (
     )
 )
 call set "%~4=%%result%%"
-goto :eof
+exit /b
 
 :RUN_FZF_SELECTOR
 set "%~1="
@@ -617,7 +617,7 @@ echo Type ALL to %~1 everything
 echo Or type the exact name(s) as shown above, separated by spaces
 echo Type 0 to go back
 echo --------------------------------------------------------------------------------
-goto :eof
+exit /b
 
 :RENDER_COLUMNS
 set "iprefix=%~1"
@@ -643,7 +643,7 @@ for /L %%r in (1,1,!ROWS!) do (
     )
     echo                  !line!
 )
-goto :eof
+exit /b
 
 :ENSURE_TOOL
 :: %1 = scoop package
@@ -668,7 +668,7 @@ exit /b 0
 set "val=!OFF!"
 if /i "%~3"=="ON" set "val=!ON!"
 for /L %%i in (1,1,%~2) do set "%~1%%i=!val!"
-goto :eof
+exit /b
 
 :ADD_ITEM
 :: %1 = counter variable name, %2 = item-array prefix, %3 = key, %4 = label
@@ -676,7 +676,7 @@ call set "cnt=%%%1%%"
 set /a "cnt+=1"
 call set "%1=%cnt%"
 set "%2%cnt%=%~3|%~4"
-goto :eof
+exit /b
 
 :MULTI_INPUT
 set "prefix=%~1"
@@ -727,12 +727,12 @@ if defined invalid (
     echo. & echo Invalid or out-of-range input:!invalid!
     pause
 )
-goto :eof
+exit /b
 
 :CHOICE
 choice /C YN /N /M "%~1 [Y/n]: "
-goto :eof
+exit /b
 
 :GO
 echo. & echo The operation is done.
-pause & goto :eof
+pause & exit /b
