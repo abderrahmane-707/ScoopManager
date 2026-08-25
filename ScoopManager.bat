@@ -320,7 +320,7 @@ if %errorlevel% equ 1 (
 where git >nul 2>&1 || (echo. & call :CHOICE "Installing Git? (necessary for updating Scoop and bucket)")
 if %errorlevel% equ 1 (
     echo. & echo Installing Git
-    call scoop install git && (
+    call scoop install -k git && (
         echo. & echo Tweaking Git settings
         for %%C in (
             "init.defaultBranch=main"
@@ -337,7 +337,7 @@ if %errorlevel% equ 1 (
 where aria2c >nul 2>&1 || (echo. & call :CHOICE "Installing aria2? (for multi-connection downloads)")
 if %errorlevel% equ 1 (
     echo. & echo Installing aria2
-    call scoop install aria2 && (
+    call scoop install -k aria2 && (
         echo. & echo Tweaking aria2 settings
         for %%C in (
             "aria2-enabled=true"
