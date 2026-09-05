@@ -627,11 +627,21 @@ for /L %%r in (1,1,!ROWS!) do (
 exit /b
 
 :ENSURE_TOOL
-:: %1 = scoop package
-:: %2 =  description shown to the user
-where %~1 >nul 2>&1 && exit /b 0
+:: %1 = executable name to check with 'where'
+:: If %3 is NOT given: %2 = description (package name = %1, same as exe name)
+:: If %3 IS given:     %2 = scoop package name to install, %3 = description
+set "exe=%~1"
+where !exe! >nul 2>&1 && exit /b 0
 
-echo. & echo %~2
+if "%~3"=="" (
+    set "pkg=%~1"
+    set "desc=%~2"
+) else (
+    set "pkg=%~2"
+    set "desc=%~3"
+)
+
+echo. & echo !pkg! !desc!
 echo. & call :CHOICE "Do you want to install it?"
 if errorlevel 2 exit /b 1
 
