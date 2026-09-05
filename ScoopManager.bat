@@ -539,7 +539,6 @@ call set "%~4=%%result%%"
 exit /b
 
 :RUN_FZF_SELECTOR
-set "%~1="
 set "fzftmp=%TEMP%\fzf_selected_%RANDOM%.txt"
 set "fzflist=%TEMP%\scoop_pkg_list_%RANDOM%.txt"
 set "rawlist=%TEMP%\scoop_pkg_raw_%RANDOM%.txt"
@@ -562,53 +561,35 @@ set "curbucket="
     )
 )
 
-fzf --multi --ansi --prompt="Search> " --header="Press [TAB] for multi-select | Press [ENTER] to confirm | Press [ESC] to cancel" --bind "tab:toggle+down,shift-tab:toggle+up" < "%fzflist%" > "%fzftmp%"
+fzf --multi --ansi ^
+    --prompt="Search> " ^
+    --header="[TAB] multi-select | [ENTER] confirm | [ESC] cancel | [?] toggle preview" ^
+    --bind "tab:toggle+down,shift-tab:toggle+up,?:toggle-preview" ^
+    --preview "scoop info {1}" ^
+    --preview-window=right:55%%:wrap ^
+    < "%fzflist%" > "%fzftmp%"
+
 if errorlevel 1 (
     del "%fzftmp%" "%fzflist%" "%rawlist%" >nul 2>&1
     exit /b 1
 )
 
-:: Extracting the specified package names
+:: Extracting bucket/package names without leading spaces
 set "selected_pkgs="
 for /f "usebackq delims=" %%L in ("%fzftmp%") do (
     set "line=%%L"
-    set "afterslash="
-    for /f "tokens=1,2 delims=/" %%A in ("!line!") do set "afterslash=%%B"
-    if defined afterslash (
-        for /f "tokens=1" %%A in ("!afterslash!") do set "selected_pkgs=!selected_pkgs! %%A"
-    ) else (
-        for /f "tokens=1" %%A in ("!line!") do set "selected_pkgs=!selected_pkgs! %%A"
+    for /f "tokens=1" %%A in ("!line!") do (
+        if defined selected_pkgs (
+            set "selected_pkgs=!selected_pkgs! %%A"
+        ) else (
+            set "selected_pkgs=%%A"
+        )
     )
 )
 
 :: Clean temporary files and save the result
 del "%fzftmp%" "%fzflist%" "%rawlist%" >nul 2>&1
-set "%~1=%selected_pkgs%"
-exit /b 0
-
-:PARSE_BUCKET_SELECTION
-set "%~3="
-set "userInput=%~1"
-set "available=%~2"
-set "validated="
-
-if /i "%userInput%"=="ALL" (
-    set "%~3=%available%"
-    exit /b 0
-)
-
-set "raw=%userInput:,= %"
-for %%G in (!raw!) do (
-    set "found="
-    for %%I in (%available%) do if /i "%%G"=="%%I" set "found=1"
-    if defined found (
-        set "validated=!validated! %%G"
-    ) else (
-        echo     - "%%G": is not an installed bucket - skipping
-    )
-)
-
-set "%~3=%validated%"
+set "toInstall=%selected_pkgs%"
 exit /b 0
 
 :PRINT_ACTION_PROMPT
