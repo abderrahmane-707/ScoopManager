@@ -9,7 +9,6 @@ set "ON=(YES)"
 set "OFF=(NO)"
 
 call :INIT_PACKAGES
-call :TOGGLE_ALL OPT %MAX_PKG% OFF
 
 :: Main interface
 :SCOOP_MENU
@@ -52,21 +51,17 @@ goto SCOOP_MENU
 
 :RUN_PACKAGES
 :: Collect every selected packages into a single list, then process it in one call
-call :COLLECT_SELECTED ITEM OPT %MAX_PKG% toInstall
+call :COLLECT_SELECTED "ITEM" "OPT" "%MAX_PKG%" "toInstall"
 
-call :INSTALL_PKG_LIST
+call :BULK_ADD_ACTION "package" "!toInstall!"
 if errorlevel 1 (pause & goto SCOOP_MENU)
 
 call :GO & call :TOGGLE_ALL OPT %MAX_PKG% OFF & goto SCOOP_MENU
 
 :UPDATE_MENU
 cls
-set "statusfile=%temp%\scoop_status.txt"
-del "%statusfile%" >nul 2>&1
-
 call scoop update
-call scoop status > "%statusfile%" 2>&1
-type "%statusfile%"
+call scoop status
 
 call :PRINT_ACTION_PROMPT "update"
 
@@ -74,48 +69,43 @@ set "choice=" & set /p "choice=--> "
 if "%choice%"=="0" goto SCOOP_MENU
 
 call :WHERE_7Z
-call :PKG_BULK_ACTION "upgrade" "%statusfile%"
+call :PKG_BULK_ACTION "upgrade"
 if errorlevel 1 (pause & goto SCOOP_MENU)
 
 call :GO & goto SCOOP_MENU
 
 :REMOVE_MENU
 cls
-set "listfile=%temp%\scoop_list.txt"
-del "%listfile%" >nul 2>&1
-
-call scoop list > "%listfile%" 2>&1
-type "%listfile%"
+call scoop list
 
 call :PRINT_ACTION_PROMPT "remove"
 
 set "choice=" & set /p "choice=--> "
 if "%choice%"=="0" goto SCOOP_MENU
 
-call :PKG_BULK_ACTION "uninstall" "%listfile%"
+call :PKG_BULK_ACTION "uninstall"
 if errorlevel 1 (pause & goto SCOOP_MENU)
 
 call :GO & goto SCOOP_MENU
 
 :MORE_PKG
 cls
-call :ENSURE_TOOL "scoop-search" "scoop-search (required for fast package search)"
+call :ENSURE_TOOL "scoop-search" "(required for fast package search)"
 if errorlevel 1 goto SCOOP_MENU
 
-call :ENSURE_TOOL "fzf" "fzf (required for interactive package search)"
+call :ENSURE_TOOL "fzf" "(required for interactive package search)"
 if errorlevel 1 goto SCOOP_MENU
 
-call :RUN_FZF_SELECTOR toInstall
+call :RUN_FZF_SELECTOR
 if errorlevel 1 goto SCOOP_MENU
 
-call :INSTALL_PKG_LIST
+call :BULK_ADD_ACTION "package" "!toInstall!"
 if errorlevel 1 (pause & goto SCOOP_MENU)
 
 call :GO & goto SCOOP_MENU
 
 :BUCKET_INITIAL
 call :INIT_BUCKET
-call :TOGGLE_ALL BOPT %MAX_BUCKET% OFF
 
 :BUCKET_MENU
 cls & echo.
@@ -152,14 +142,12 @@ call :MULTI_INPUT BOPT %MAX_BUCKET%
 goto BUCKET_MENU
 
 :ADD_BUCKETS
-call :COLLECT_SELECTED BITEM BOPT %MAX_BUCKET% toAddBuckets
+call :COLLECT_SELECTED "BITEM" "BOPT" "%MAX_BUCKET%" "toAddBuckets"
 
-call :ADD_BUCKETS_LIST
-if errorlevel 1 (
-    pause & goto BUCKET_MENU
-) else (
-    call :TOGGLE_ALL BOPT %MAX_BUCKET% OFF & goto BUCKET_MENU
-)
+call :BULK_ADD_ACTION "bucket" "!toAddBuckets!"
+if errorlevel 1 (pause & goto BUCKET_MENU)
+    
+call :TOGGLE_ALL BOPT %MAX_BUCKET% OFF & goto BUCKET_MENU
 
 :UPDATE_BUCKETS
 cls & echo Updating all installed Buckets
@@ -167,50 +155,32 @@ call scoop update
 call :GO & goto BUCKET_MENU
 
 :REMOVE_BUCKETS
-cls & echo Installed buckets
+cls & echo Installed buckets:
 call scoop bucket list
-
-:: Retrieve a list of installed repositories (reuses the same parser as package lists)
-set "bucketlistfile=%temp%\scoop_bucket_list_%random%.txt"
-call scoop bucket list > "%bucketlistfile%" 2>&1
-call :COLLECT_NAMES "%bucketlistfile%" installedBuckets
-del "%bucketlistfile%" >nul 2>&1
-
-if not defined installedBuckets (
-    echo. & echo No buckets are currently installed
-    pause & goto BUCKET_MENU
-)
 
 call :PRINT_ACTION_PROMPT "remove"
 
 set "choice=" & set /p "choice=--> "
+if not defined choice goto BUCKET_MENU
 if "%choice%"=="0" goto BUCKET_MENU
 
-:: Processing user choices and translating them into a list
-call :PARSE_BUCKET_SELECTION "%choice%" "%installedBuckets%" tormBuckets
-
-echo.
-if not defined tormBuckets (
-    echo No valid buckets selected
-    pause & goto BUCKET_MENU
+if /i "%choice%"=="ALL" (
+	call :GET_SCOOP_NAMES tormBuckets "buckets"
+    echo. & echo Removing all installed buckets:
+) else (
+    set "tormBuckets=%choice:,= %"
+    echo. & echo Removing the following buckets:
 )
 
-echo Removing the following buckets:
-for %%G in (%tormBuckets%) do echo     - %%G
-
+for %%G in (!tormBuckets!) do echo     - %%G
 echo. & call :CHOICE "Do you want to continue?"
 if errorlevel 2 (
     echo. & echo The operation was cancelled
     pause & goto BUCKET_MENU
 )
 
-for %%G in (%tormBuckets%) do (
-    echo. & echo Removing bucket: %%G
-    call scoop bucket rm %%G
-)
-
+echo. & for %%G in (!tormBuckets!) do call scoop bucket rm %%G
 call :GO & goto BUCKET_MENU
-
 
 :: Functions
 :INIT_PACKAGES
@@ -262,6 +232,7 @@ call :ADD_ITEM PKG_COUNT ITEM "rustdesk"            "RustDesk"
 
 :: Git Tools
 call :ADD_ITEM PKG_COUNT ITEM "git"                 "Git"
+call :ADD_ITEM PKG_COUNT ITEM "mingit"              "Mingit"
 call :ADD_ITEM PKG_COUNT ITEM "gh"                  "GitHub CLI"
 call :ADD_ITEM PKG_COUNT ITEM "sourcegit"           "SourceGit"
 
@@ -272,6 +243,8 @@ call :ADD_ITEM PKG_COUNT ITEM "cppcheck"            "Cppcheck"
 call :ADD_ITEM PKG_COUNT ITEM "hyperfine"           "Hyperfine"
 
 set "MAX_PKG=%PKG_COUNT%"
+
+call :TOGGLE_ALL OPT %MAX_PKG% OFF
 exit /b
 
 :INIT_BUCKET
@@ -288,6 +261,8 @@ call :ADD_ITEM BUCKET_COUNT BITEM "sysinternals"    "Sysinternals"
 call :ADD_ITEM BUCKET_COUNT BITEM "nirsoft"         "NirSoft"
 
 set "MAX_BUCKET=%BUCKET_COUNT%"
+
+call :TOGGLE_ALL BOPT %MAX_BUCKET% OFF
 exit /b
 
 :WHERE_SCOOP
@@ -303,7 +278,6 @@ powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-ExecutionPolicy -Exe
 
 :: Update current session PATH so 'where scoop' works immediately without restarting CMD
 set "PATH=%USERPROFILE%\scoop\shims;%PATH%"
-
 where scoop >nul 2>&1
 if errorlevel 1 (
     echo. & echo Installation failed or PATH not updated in this session
@@ -317,41 +291,34 @@ if %errorlevel% equ 1 (
     call scoop bucket add versions
 )
 
-where git >nul 2>&1 || (echo. & call :CHOICE "Installing Git? (necessary for updating Scoop and bucket)")
-if %errorlevel% equ 1 (
-    echo. & echo Installing Git
-    call scoop install -k git && (
-        echo. & echo Tweaking Git settings
-        for %%C in (
-            "init.defaultBranch=main"
-            "core.autocrlf=true"
-            "pull.rebase=false"
-        ) do (
-            for /f "tokens=1,2 delims==" %%K in (%%C) do (
-                call git config --global %%K %%L
-            )
+call :ENSURE_TOOL "git" "mingit" "(necessary for updating Scoop and bucket)"
+if %errorlevel% equ 0 (
+    echo. & echo Tweaking Git settings
+    for %%C in (
+        "init.defaultBranch=main"
+        "core.autocrlf=true"
+        "pull.rebase=false"
+    ) do (
+        for /f "tokens=1,2 delims==" %%K in (%%C) do (
+            call git config --global %%K %%L
         )
     )
 )
 
-where aria2c >nul 2>&1 || (echo. & call :CHOICE "Installing aria2? (for multi-connection downloads)")
-if %errorlevel% equ 1 (
-    echo. & echo Installing aria2
-    call scoop install -k aria2 && (
-        echo. & echo Tweaking aria2 settings
-        for %%C in (
-            "aria2-enabled=true"
-            "aria2-warning-enabled=false"
-            "aria2-split=8"
-            "aria2-max-connection-per-server=8"
-        ) do (
-            for /f "tokens=1,2 delims==" %%K in (%%C) do (
-                call scoop config %%K %%L
-            )
+call :ENSURE_TOOL "aria2c" "aria2" "(for multi-connection downloads)"
+if %errorlevel% equ 0 (
+    echo. & echo Tweaking aria2 settings
+    for %%C in (
+        "aria2-enabled=true"
+        "aria2-warning-enabled=false"
+        "aria2-split=8"
+        "aria2-max-connection-per-server=8"
+    ) do (
+        for /f "tokens=1,2 delims==" %%K in (%%C) do (
+            call scoop config %%K %%L
         )
     )
 )
-
 exit /b 0
 
 :WHERE_7Z
@@ -366,14 +333,18 @@ if not defined HAS_7Z (
 )
 exit /b
 
-:INSTALL_PKG_LIST
-if not defined toInstall (
-    echo. & echo No packages selected
+:BULK_ADD_ACTION
+set "type=%~1"
+set "items=%~2"
+
+echo.
+if not defined items (
+    echo. & echo No !type!s selected
     exit /b 1
 )
 
-cls & echo Selected packages:
-for %%P in (!toInstall!) do echo     - %%P
+cls & echo Selected !type!s:
+for %%I in (!items!) do echo     - %%I
 
 echo. & call :CHOICE "Do you want to continue?"
 if errorlevel 2 (
@@ -381,150 +352,69 @@ if errorlevel 2 (
     exit /b 2
 )
 
-call :WHERE_7Z
-echo. & call scoop install -k !toInstall!
-exit /b 0
-
-:ADD_BUCKETS_LIST
-if not defined toAddBuckets (
-    echo. & echo No buckets selected
-    exit /b 1
+echo.
+if /i "!type!"=="package" (
+    call :WHERE_7Z
+    call scoop install -k !items!
+) else (
+    for %%B in (!items!) do call scoop bucket add %%B
+    call :GO
 )
 
-cls & echo Selected buckets:
-for %%B in (!toAddBuckets!) do echo     - %%B
-
-echo. & call :CHOICE "Do you want to continue?"
-if errorlevel 2 (
-    echo. & echo The operation was cancelled
-    exit /b 2
-)
-
-echo. & for %%B in (!toAddBuckets!) do call scoop bucket add %%B
-
-call :GO
 exit /b 0
 
 :PKG_BULK_ACTION
 :: %1 = "upgrade" or "uninstall"
-:: %2 = (optional, upgrade only) path to an already-captured "scoop status" output file
 echo.
 if not defined choice (
     echo No package selected
     exit /b 1
 )
+
 set "action=%~1"
-if /i "!action!"=="upgrade" (set "verb=Updating") else (set "verb=Removing")
+set "cmd_targets=!choice:,= !"
 
-:: installed packages list
-set "listfile="
-set "cleanup_list="
-if /i "!action!"=="uninstall" set "listfile=%~2"
-if not defined listfile (
-    set "listfile=%temp%\scoop_list_%random%.txt"
-    call scoop list > "!listfile!" 2>&1
-    set "cleanup_list=1"
-)
-call :COLLECT_NAMES "!listfile!" installed
-if defined cleanup_list del "!listfile!" >nul 2>&1
-
-:: packages with available updates
-set "hasupdate= "
 if /i "!action!"=="upgrade" (
-    set "statusfile=%~2"
-    set "cleanup_status="
-    if not defined statusfile (
-        set "statusfile=%temp%\scoop_status_%random%.txt"
-        call scoop status > "!statusfile!" 2>&1
-        set "cleanup_status=1"
-    )
-    call :COLLECT_NAMES "!statusfile!" hasupdate
-    if defined cleanup_status del "!statusfile!" >nul 2>&1
+    set "verb=Updating"
+) else (
+    set "verb=Removing"
 )
-
-set "cmd_targets="
 if /i "!choice!"=="ALL" (
     if /i "!action!"=="upgrade" (
-        if "!hasupdate!"==" " (
-            echo No updates are available
-            exit /b 1
-        )
-        set "targets=!hasupdate!"
         set "cmd_targets=*"
+        echo !verb! all packages
     ) else (
-        if "!installed!"==" " (
-            echo No packages are currently installed
-            exit /b 1
-        )
-        set "targets=!installed!"
-        set "cmd_targets=!installed!"
+		call :GET_SCOOP_NAMES cmd_targets "apps"
+        echo !verb! all installed packages:
+        for %%P in (!cmd_targets!) do echo     - %%P
     )
-    echo !verb! all packages:
-    for %%P in (!targets!) do echo     - %%P
 ) else (
-    set "requested=!choice:,= !"
-    set "targets="
-    set "missing="
-    set "noupdate="
-    for %%P in (!requested!) do (
-        set "isinstalled="
-        for %%X in (!installed!) do if /i "%%X"=="%%P" set "isinstalled=1"
-        if not defined isinstalled (
-            set "missing=!missing! %%P"
-        ) else if /i "!action!"=="upgrade" (
-            set "hasupd="
-            for %%X in (!hasupdate!) do if /i "%%X"=="%%P" set "hasupd=1"
-            if not defined hasupd (
-                set "noupdate=!noupdate! %%P"
-            ) else (
-                set "targets=!targets! %%P"
-            )
-        ) else (
-            set "targets=!targets! %%P"
-        )
-    )
-    if defined missing (
-        echo The following packages are not installed and will be skipped:
-        for %%M in (!missing!) do echo     - %%M
-    )
-    if defined noupdate (
-        echo The following packages are already up to date and will be skipped:
-        for %%N in (!noupdate!) do echo     - %%N
-    )
-    if not defined targets (
-        echo. & echo None of the selected packages need action
-        exit /b 1
-    )
     echo !verb! the following packages:
-    for %%P in (!targets!) do echo     - %%P
-    set "cmd_targets=!targets!"
+    for %%P in (!cmd_targets!) do echo     - %%P
 )
 
-:PKG_CONFIRM
 echo. & call :CHOICE "Do you want to continue?"
-if errorlevel 2 (echo. & echo The operation was cancelled & exit /b 2)
+if errorlevel 2 (
+    echo. & echo The operation was cancelled  
+    exit /b 2
+)
+
+echo.
 if /i "!action!"=="upgrade" (
-    echo. & call scoop update -k !cmd_targets! && call scoop cleanup !cmd_targets!
+    call scoop update -k !cmd_targets!
+    call scoop cleanup !cmd_targets!
 ) else (
-    echo. & call scoop uninstall !cmd_targets! --purge
+    call scoop uninstall !cmd_targets! --purge
 )
 exit /b 0
 
-:COLLECT_NAMES
-:: %1 = path to file (output of "scoop list", "scoop status" or "scoop bucket list")
-:: %2 = name of the variable to receive the space-separated first-column names
-set "src_file=%~1"
-set "names= "
-set "started="
-for /f "usebackq delims=" %%P in ("!src_file!") do (
-    set "ln=%%P"
-    if defined started (
-        if not "!ln!"=="" for /f "tokens=1" %%A in ("!ln!") do set "names=!names!%%A "
-    ) else (
-        if "!ln:~0,4!"=="----" set "started=1"
-    )
+:GET_SCOOP_NAMES
+:: Usage: call :GET_SCOOP_NAMES <return_var> <apps|buckets>
+set "result="
+for /f "usebackq delims=" %%L in (`powershell -NoProfile -Command "(scoop export | ConvertFrom-Json).%~2.Name" 2^>nul`) do (
+    if not "%%L"=="" set "result=!result! %%L"
 )
-set "%~2=!names!"
+call set "%~1=%%result%%"
 exit /b
 
 :COLLECT_SELECTED
@@ -646,10 +536,10 @@ echo. & call :CHOICE "Do you want to install it?"
 if errorlevel 2 exit /b 1
 
 call :WHERE_7Z
-echo. & call scoop install -k %~1 
-where %~1 >nul 2>&1
+echo. & call scoop install -k !pkg!
+where !exe! >nul 2>&1
 if %errorlevel% neq 0 (
-    echo. & echo Failed to install %~1 or PATH not updated in this session
+    echo. & echo Failed to install !pkg! or PATH not updated in this session
     pause & exit /b 1
 )
 exit /b 0
