@@ -284,13 +284,6 @@ if errorlevel 1 (
     pause & exit /b 1
 )
 
-echo. & call :CHOICE "Adding extras and versions buckets? (necessary to download all the packages on the list)"
-if %errorlevel% equ 1 (
-    echo. & echo Adding extras and versions buckets
-    call scoop bucket add extras
-    call scoop bucket add versions
-)
-
 call :ENSURE_TOOL "git" "mingit" "(necessary for updating Scoop and bucket)"
 if %errorlevel% equ 0 (
     echo. & echo Tweaking Git settings
@@ -318,6 +311,13 @@ if %errorlevel% equ 0 (
             call scoop config %%K %%L
         )
     )
+)
+
+echo. & call :CHOICE "Adding extras and versions buckets? (necessary to download all the packages on the list)"
+if %errorlevel% equ 1 (
+    echo. & echo Adding extras and versions buckets
+    call scoop bucket add extras
+    call scoop bucket add versions
 )
 exit /b 0
 
