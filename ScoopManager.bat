@@ -205,7 +205,7 @@ call :ADD_ITEM PKG_COUNT ITEM "winrar"              "WinRAR"
 call :ADD_ITEM PKG_COUNT ITEM "peazip"              "PeaZip"
 
 :: Multi Media
-call :ADD_ITEM PKG_COUNT ITEM "mpc-hc-fork"         "MPC-HC (Fork)"
+call :ADD_ITEM PKG_COUNT ITEM "mpc-hc-fork"         "MPC-HC"
 call :ADD_ITEM PKG_COUNT ITEM "xnviewmp"            "XnView MP"
 call :ADD_ITEM PKG_COUNT ITEM "sumatrapdf"          "SumatraPDF"
 
