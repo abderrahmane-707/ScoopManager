@@ -274,7 +274,7 @@ if errorlevel 2 (
 )
 
 echo. & echo Installing Scoop via PowerShell
-powershell -NoProfile -ExecutionPolicy Bypass -Command "Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser -Force; irm get.scoop.sh | iex"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "irm get.scoop.sh | iex"
 
 :: Update current session PATH so 'where scoop' works immediately without restarting CMD
 set "PATH=%USERPROFILE%\scoop\shims;%PATH%"
