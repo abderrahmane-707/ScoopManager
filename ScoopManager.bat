@@ -298,7 +298,7 @@ if %errorlevel% equ 0 (
     )
 )
 
-call :ENSURE_TOOL "aria2c" "aria2" "(for multi-connection downloads)"
+call :ENSURE_TOOL "aria2c" "aria2" "((Optional) for multi-connection downloads)"
 if %errorlevel% equ 0 (
     echo. & echo Tweaking aria2 settings
     for %%C in (
@@ -311,13 +311,6 @@ if %errorlevel% equ 0 (
             call scoop config %%K %%L
         )
     )
-)
-
-echo. & call :CHOICE "Adding extras and versions buckets? (necessary to download all the packages on the list)"
-if %errorlevel% equ 1 (
-    echo. & echo Adding extras and versions buckets
-    call scoop bucket add extras
-    call scoop bucket add versions
 )
 exit /b 0
 
