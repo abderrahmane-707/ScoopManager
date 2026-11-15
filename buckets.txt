@@ -1,0 +1,16 @@
+# ============================================================
+# Scoop buckets list - one bucket per line
+# Format:  bucket-name|Display Name
+# Lines starting with # and empty lines are ignored
+# ============================================================
+
+main|Main
+extras|Extras
+versions|Versions
+java|Java
+php|PHP
+games|Games
+nerd-fonts|Nerd Fonts
+nonportable|Non-Portable
+sysinternals|Sysinternals
+nirsoft|NirSoft

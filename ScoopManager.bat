@@ -1,6 +1,10 @@
 @echo off
 setlocal enabledelayedexpansion
 
+:: External list files
+set "PKG_FILE=%~dp0packages.txt"
+set "BUCKET_FILE=%~dp0buckets.txt"
+
 call :WHERE_SCOOP
 if errorlevel 1 exit /b 1
 
@@ -9,12 +13,13 @@ set "ON=(YES)"
 set "OFF=(NO)"
 
 call :INIT_PACKAGES
+if errorlevel 1 (pause & exit /b 1)
 
 :: Main interface
 :SCOOP_MENU
 cls
 echo.
-echo                                                 \\!//
+echo                                                 \\^^!//
 echo                                                 (o o)
 echo              -------------------------------oOOo-(_)-oOOo-------------------------------
 echo                                         Scoop Package Manager
@@ -106,6 +111,7 @@ call :GO & goto SCOOP_MENU
 
 :BUCKET_INITIAL
 call :INIT_BUCKET
+if errorlevel 1 (pause & goto SCOOP_MENU)
 
 :BUCKET_MENU
 cls & echo.
@@ -146,7 +152,7 @@ call :COLLECT_SELECTED "BITEM" "BOPT" "%MAX_BUCKET%" "toAddBuckets"
 
 call :BULK_ADD_ACTION "bucket" "!toAddBuckets!"
 if errorlevel 1 (pause & goto BUCKET_MENU)
-    
+
 call :TOGGLE_ALL BOPT %MAX_BUCKET% OFF & goto BUCKET_MENU
 
 :UPDATE_BUCKETS
@@ -165,7 +171,7 @@ if not defined choice goto BUCKET_MENU
 if "%choice%"=="0" goto BUCKET_MENU
 
 if /i "%choice%"=="ALL" (
-	call :GET_SCOOP_NAMES tormBuckets "buckets"
+    call :GET_SCOOP_NAMES tormBuckets "buckets"
     echo. & echo Removing all installed buckets:
 ) else (
     set "tormBuckets=%choice:,= %"
@@ -182,95 +188,53 @@ if errorlevel 2 (
 echo. & for %%G in (!tormBuckets!) do call scoop bucket rm %%G
 call :GO & goto BUCKET_MENU
 
-:: Functions
+
 :INIT_PACKAGES
-set "PKG_COUNT=0"
-
-:: Web Browsers
-call :ADD_ITEM PKG_COUNT ITEM "brave"               "Brave"
-call :ADD_ITEM PKG_COUNT ITEM "librewolf"           "LibreWolf"
-call :ADD_ITEM PKG_COUNT ITEM "tor-browser"         "Tor Browser"
-
-:: File Managers, Search & Navigation
-call :ADD_ITEM PKG_COUNT ITEM "ripgrep"             "Ripgrep"
-call :ADD_ITEM PKG_COUNT ITEM "fd"                  "fd-find"
-call :ADD_ITEM PKG_COUNT ITEM "fzf"                 "fzf"
-call :ADD_ITEM PKG_COUNT ITEM "yazi"                "Yazi"
-call :ADD_ITEM PKG_COUNT ITEM "tre-command"         "Tre"
-call :ADD_ITEM PKG_COUNT ITEM "everything"          "Everything"
-
-:: Archivers & Compression
-call :ADD_ITEM PKG_COUNT ITEM "7zip-zstd"           "7-Zip Zstandard"
-call :ADD_ITEM PKG_COUNT ITEM "winrar"              "WinRAR"
-call :ADD_ITEM PKG_COUNT ITEM "peazip"              "PeaZip"
-
-:: Multi Media
-call :ADD_ITEM PKG_COUNT ITEM "mpc-hc-fork"         "MPC-HC"
-call :ADD_ITEM PKG_COUNT ITEM "xnviewmp"            "XnView MP"
-call :ADD_ITEM PKG_COUNT ITEM "sumatrapdf"          "SumatraPDF"
-
-:: Text Editors
-call :ADD_ITEM PKG_COUNT ITEM "vscode"              "VS Code"
-call :ADD_ITEM PKG_COUNT ITEM "micro"               "Micro"
-call :ADD_ITEM PKG_COUNT ITEM "notepadplusplus"     "Notepad++"
-
-:: System Info
-call :ADD_ITEM PKG_COUNT ITEM "btop"                "btop"
-call :ADD_ITEM PKG_COUNT ITEM "hwinfo"              "HWiNFO"
-call :ADD_ITEM PKG_COUNT ITEM "duf"                 "duf"
-call :ADD_ITEM PKG_COUNT ITEM "dust"                "dust"
-
-:: System Cleaners
-call :ADD_ITEM PKG_COUNT ITEM "bleachbit"           "BleachBit"
-
-:: Network, Remote & Downloads
-call :ADD_ITEM PKG_COUNT ITEM "freedownloadmanager" "FDM"
-call :ADD_ITEM PKG_COUNT ITEM "aria2"               "aria2"
-call :ADD_ITEM PKG_COUNT ITEM "ytdlp-interface"     "yt-dlp Interface"
-call :ADD_ITEM PKG_COUNT ITEM "qbittorrent"         "qBittorrent"
-call :ADD_ITEM PKG_COUNT ITEM "rustdesk"            "RustDesk"
-
-:: Git Tools
-call :ADD_ITEM PKG_COUNT ITEM "git"                 "Git"
-call :ADD_ITEM PKG_COUNT ITEM "mingit"              "Mingit"
-call :ADD_ITEM PKG_COUNT ITEM "gh"                  "GitHub CLI"
-call :ADD_ITEM PKG_COUNT ITEM "sourcegit"           "SourceGit"
-
-:: Dev
-call :ADD_ITEM PKG_COUNT ITEM "mingw"               "MinGW"
-call :ADD_ITEM PKG_COUNT ITEM "llvm"                "LLVM"
-call :ADD_ITEM PKG_COUNT ITEM "cppcheck"            "Cppcheck"
-call :ADD_ITEM PKG_COUNT ITEM "hyperfine"           "Hyperfine"
-
+call :LOAD_LIST "%PKG_FILE%" PKG_COUNT ITEM
+if errorlevel 1 exit /b 1
 set "MAX_PKG=%PKG_COUNT%"
-
 call :TOGGLE_ALL OPT %MAX_PKG% OFF
-exit /b
+exit /b 0
 
 :INIT_BUCKET
-set "BUCKET_COUNT=0"
-call :ADD_ITEM BUCKET_COUNT BITEM "main"            "Main"
-call :ADD_ITEM BUCKET_COUNT BITEM "extras"          "Extras"
-call :ADD_ITEM BUCKET_COUNT BITEM "versions"        "Versions"
-call :ADD_ITEM BUCKET_COUNT BITEM "java"            "Java"
-call :ADD_ITEM BUCKET_COUNT BITEM "php"             "PHP"
-call :ADD_ITEM BUCKET_COUNT BITEM "games"           "Games"
-call :ADD_ITEM BUCKET_COUNT BITEM "nerd-fonts"      "Nerd Fonts"
-call :ADD_ITEM BUCKET_COUNT BITEM "nonportable"     "Non-Portable"
-call :ADD_ITEM BUCKET_COUNT BITEM "sysinternals"    "Sysinternals"
-call :ADD_ITEM BUCKET_COUNT BITEM "nirsoft"         "NirSoft"
-
+call :LOAD_LIST "%BUCKET_FILE%" BUCKET_COUNT BITEM
+if errorlevel 1 exit /b 1
 set "MAX_BUCKET=%BUCKET_COUNT%"
-
 call :TOGGLE_ALL BOPT %MAX_BUCKET% OFF
-exit /b
+exit /b 0
+
+:LOAD_LIST
+:: %1 = list file, %2 = counter var, %3 = item-array prefix
+:: File format: key|Label   (empty lines and lines starting with # are ignored)
+set "%~2=0"
+if not exist "%~1" (
+    echo. & echo List file not found: %~1
+    exit /b 1
+)
+
+for /f "usebackq eol=# tokens=1,* delims=|" %%A in ("%~1") do (
+    set "lkey="
+    set "llabel="
+    for %%K in (%%A) do set "lkey=%%K"
+    if defined lkey (
+        set "lraw=%%B"
+        if defined lraw (
+            for /f "tokens=* delims= " %%L in ("!lraw!") do set "llabel=%%L"
+        )
+        if not defined llabel set "llabel=!lkey!"
+        set /a "%~2+=1"
+        set "%~3!%~2!=!lkey!|!llabel!"
+    )
+)
+
+exit /b 0
 
 :WHERE_SCOOP
 where scoop >nul 2>&1 && exit /b 0
 call :CHOICE "Scoop is not installed. Do you want to install it?"
 if errorlevel 2 (
     echo. & echo Scoop is required for this script to work
-	pause & exit /b 2
+    pause & exit /b 2
 )
 
 echo. & echo Installing Scoop via PowerShell
@@ -291,6 +255,10 @@ if %errorlevel% equ 0 (
         "init.defaultBranch=main"
         "core.autocrlf=true"
         "pull.rebase=false"
+        "core.longpaths=true"
+        "push.autoSetupRemote=true"
+        "fetch.prune=true"
+        "merge.conflictStyle=zdiff3"
     ) do (
         for /f "tokens=1,2 delims==" %%K in (%%C) do (
             call git config --global %%K %%L
@@ -306,12 +274,15 @@ if %errorlevel% equ 0 (
         "aria2-warning-enabled=false"
         "aria2-split=8"
         "aria2-max-connection-per-server=8"
+        "aria2-min-split-size=10M"
+        "aria2-retry-wait=3"
     ) do (
         for /f "tokens=1,2 delims==" %%K in (%%C) do (
             call scoop config %%K %%L
         )
     )
 )
+
 exit /b 0
 
 :WHERE_7Z
@@ -377,7 +348,7 @@ if /i "!choice!"=="ALL" (
         set "cmd_targets=*"
         echo !verb! all packages
     ) else (
-		call :GET_SCOOP_NAMES cmd_targets "apps"
+        call :GET_SCOOP_NAMES cmd_targets "apps"
         echo !verb! all installed packages:
         for %%P in (!cmd_targets!) do echo     - %%P
     )
@@ -388,7 +359,7 @@ if /i "!choice!"=="ALL" (
 
 echo. & call :CHOICE "Do you want to continue?"
 if errorlevel 2 (
-    echo. & echo The operation was cancelled  
+    echo. & echo The operation was cancelled
     exit /b 2
 )
 
@@ -526,7 +497,7 @@ if "%~3"=="" (
 
 echo. & echo !pkg! !desc!
 echo. & call :CHOICE "Do you want to install it?"
-if errorlevel 2 exit /b 1
+if errorlevel 2 exit /b 2
 
 call :WHERE_7Z
 echo. & call scoop install -k !pkg!
@@ -542,14 +513,6 @@ exit /b 0
 set "val=!OFF!"
 if /i "%~3"=="ON" set "val=!ON!"
 for /L %%i in (1,1,%~2) do set "%~1%%i=!val!"
-exit /b
-
-:ADD_ITEM
-:: %1 = counter variable name, %2 = item-array prefix, %3 = key, %4 = label
-call set "cnt=%%%1%%"
-set /a "cnt+=1"
-call set "%1=%cnt%"
-set "%2%cnt%=%~3|%~4"
 exit /b
 
 :MULTI_INPUT

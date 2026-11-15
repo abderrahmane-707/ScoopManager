@@ -1,0 +1,56 @@
+# ============================================================
+# Scoop packages list - one package per line
+# Format:  scoop-package-name|Display Name
+# Lines starting with # and empty lines are ignored
+# Use bucket/package if needed, e.g. extras/vscode|VS Code
+# Avoid the ! character in names
+# ============================================================
+
+# Web Browsers
+librewolf|LibreWolf
+tor-browser|Tor Browser
+
+# File Managers, Search & Navigation
+ripgrep|Ripgrep
+fd|fd-find
+fzf|fzf
+yazi|Yazi
+tre-command|Tre
+everything|Everything
+
+# Archivers & Compression
+7zip-zstd|7-Zip Zstandard
+winrar|WinRAR
+peazip|PeaZip
+
+# Text Editors
+vscode|VS Code
+micro|Micro
+notepadplusplus|Notepad++
+
+# System Info
+btop|btop
+hwinfo|HWiNFO
+duf|duf
+dust|dust
+
+# System Cleaners
+bleachbit|BleachBit
+
+# Network, Remote & Downloads
+aria2|aria2
+ytdlp-interface|yt-dlp Interface
+rclone|Rclone
+qbittorrent|qBittorrent
+localsend|LocalSend
+
+# Git Tools
+git|Git
+mingit|Mingit
+gh|GitHub CLI
+sourcegit|SourceGit
+
+# Dev
+mingw|MinGW
+llvm|LLVM
+hyperfine|Hyperfine
