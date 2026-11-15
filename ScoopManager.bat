@@ -5,6 +5,9 @@ setlocal enabledelayedexpansion
 set "PKG_FILE=%~dp0packages.txt"
 set "BUCKET_FILE=%~dp0buckets.txt"
 
+call :CHECK_ADMIN
+if errorlevel 1 exit /b 1
+
 call :WHERE_SCOOP
 if errorlevel 1 exit /b 1
 
@@ -25,7 +28,7 @@ echo              -------------------------------oOOo-(_)-oOOo------------------
 echo                                         Scoop Package Manager
 echo              ---------------------------------------------------------------------------
 echo.
-call :RENDER_COLUMNS ITEM OPT %MAX_PKG%
+call :RENDER_COLUMNS PL OPT %MAX_PKG%
 
 echo.
 echo    [U] Update Packages
@@ -41,22 +44,22 @@ echo.
 echo Tip: You can select multiple items, e.g. 1,3,5 or 1-5 or 1-3,7,10-12
 set "choice=" & set /p "choice=--> Select option(s) and press [S] to Start: "
 
-if "%choice%"=="" goto SCOOP_MENU
-if "%choice%"=="0" exit /b
-if /i "%choice%"=="S" goto RUN_PACKAGES
-if /i "%choice%"=="A" (call :TOGGLE_ALL OPT %MAX_PKG% ON & goto SCOOP_MENU)
-if /i "%choice%"=="D" (call :TOGGLE_ALL OPT %MAX_PKG% OFF & goto SCOOP_MENU)
-if /i "%choice%"=="U" goto UPDATE_MENU
-if /i "%choice%"=="R" goto REMOVE_MENU
-if /i "%choice%"=="B" goto BUCKET_INITIAL
-if /i "%choice%"=="M" goto MORE_PKG
+if not defined choice goto SCOOP_MENU
+if "!choice!"=="0" exit /b
+if /i "!choice!"=="S" goto RUN_PACKAGES
+if /i "!choice!"=="A" (call :TOGGLE_ALL OPT %MAX_PKG% ON & goto SCOOP_MENU)
+if /i "!choice!"=="D" (call :TOGGLE_ALL OPT %MAX_PKG% OFF & goto SCOOP_MENU)
+if /i "!choice!"=="U" goto UPDATE_MENU
+if /i "!choice!"=="R" goto REMOVE_MENU
+if /i "!choice!"=="B" goto BUCKET_INITIAL
+if /i "!choice!"=="M" goto MORE_PKG
 
 call :MULTI_INPUT OPT %MAX_PKG%
 goto SCOOP_MENU
 
 :RUN_PACKAGES
-:: Collect every selected packages into a single list, then process it in one call
-call :COLLECT_SELECTED "ITEM" "OPT" "%MAX_PKG%" "toInstall"
+:: Collect every selected package into a single list, then process it
+call :COLLECT_SELECTED "PK" "OPT" "%MAX_PKG%" "toInstall"
 
 call :BULK_ADD_ACTION "package" "!toInstall!"
 if errorlevel 1 (pause & goto SCOOP_MENU)
@@ -71,9 +74,9 @@ call scoop status
 call :PRINT_ACTION_PROMPT "update"
 
 set "choice=" & set /p "choice=--> "
-if "%choice%"=="0" goto SCOOP_MENU
+if not defined choice goto SCOOP_MENU
+if "!choice!"=="0" goto SCOOP_MENU
 
-call :WHERE_7Z
 call :PKG_BULK_ACTION "upgrade"
 if errorlevel 1 (pause & goto SCOOP_MENU)
 
@@ -86,7 +89,8 @@ call scoop list
 call :PRINT_ACTION_PROMPT "remove"
 
 set "choice=" & set /p "choice=--> "
-if "%choice%"=="0" goto SCOOP_MENU
+if not defined choice goto SCOOP_MENU
+if "!choice!"=="0" goto SCOOP_MENU
 
 call :PKG_BULK_ACTION "uninstall"
 if errorlevel 1 (pause & goto SCOOP_MENU)
@@ -115,14 +119,14 @@ if errorlevel 1 (pause & goto SCOOP_MENU)
 
 :BUCKET_MENU
 cls & echo.
-echo                                                 \\!//
+echo                                                 \\^^!//
 echo                                                 (o o)
 echo              -------------------------------oOOo-(_)-oOOo-------------------------------
 echo                                            Buckets Manager
 echo              ---------------------------------------------------------------------------
 echo.
 
-call :RENDER_COLUMNS BITEM BOPT %MAX_BUCKET%
+call :RENDER_COLUMNS BK BOPT %MAX_BUCKET%
 
 echo.
 echo    [U] Update Buckets
@@ -136,19 +140,19 @@ echo.
 echo Tip: You can select multiple items, e.g. 1,3,5 or 1-5 or 1-3,7,10-12
 set "choice=" & set /p "choice=--> Select option(s) and press [S] to Start: "
 
-if "%choice%"=="" goto BUCKET_MENU
-if "%choice%"=="0" goto SCOOP_MENU
-if /i "%choice%"=="A" (call :TOGGLE_ALL BOPT %MAX_BUCKET% ON & goto BUCKET_MENU)
-if /i "%choice%"=="D" (call :TOGGLE_ALL BOPT %MAX_BUCKET% OFF & goto BUCKET_MENU)
-if /i "%choice%"=="U" goto UPDATE_BUCKETS
-if /i "%choice%"=="S" goto ADD_BUCKETS
-if /i "%choice%"=="R" goto REMOVE_BUCKETS
+if not defined choice goto BUCKET_MENU
+if "!choice!"=="0" goto SCOOP_MENU
+if /i "!choice!"=="A" (call :TOGGLE_ALL BOPT %MAX_BUCKET% ON & goto BUCKET_MENU)
+if /i "!choice!"=="D" (call :TOGGLE_ALL BOPT %MAX_BUCKET% OFF & goto BUCKET_MENU)
+if /i "!choice!"=="U" goto UPDATE_BUCKETS
+if /i "!choice!"=="S" goto ADD_BUCKETS
+if /i "!choice!"=="R" goto REMOVE_BUCKETS
 
 call :MULTI_INPUT BOPT %MAX_BUCKET%
 goto BUCKET_MENU
 
 :ADD_BUCKETS
-call :COLLECT_SELECTED "BITEM" "BOPT" "%MAX_BUCKET%" "toAddBuckets"
+call :COLLECT_SELECTED "BK" "BOPT" "%MAX_BUCKET%" "toAddBuckets"
 
 call :BULK_ADD_ACTION "bucket" "!toAddBuckets!"
 if errorlevel 1 (pause & goto BUCKET_MENU)
@@ -168,13 +172,17 @@ call :PRINT_ACTION_PROMPT "remove"
 
 set "choice=" & set /p "choice=--> "
 if not defined choice goto BUCKET_MENU
-if "%choice%"=="0" goto BUCKET_MENU
+if "!choice!"=="0" goto BUCKET_MENU
 
-if /i "%choice%"=="ALL" (
+if /i "!choice!"=="ALL" (
     call :GET_SCOOP_NAMES tormBuckets "buckets"
+    if not defined tormBuckets (
+        echo. & echo Could not read the installed buckets list
+        pause & goto BUCKET_MENU
+    )
     echo. & echo Removing all installed buckets:
 ) else (
-    set "tormBuckets=%choice:,= %"
+    set "tormBuckets=!choice:,= !"
     echo. & echo Removing the following buckets:
 )
 
@@ -188,46 +196,19 @@ if errorlevel 2 (
 echo. & for %%G in (!tormBuckets!) do call scoop bucket rm %%G
 call :GO & goto BUCKET_MENU
 
+:CHECK_ADMIN
+:: Warn when running elevated
+set "IS_ADMIN="
+fltmc >nul 2>&1 && set "IS_ADMIN=1"
+if not defined IS_ADMIN exit /b 0
 
-:INIT_PACKAGES
-call :LOAD_LIST "%PKG_FILE%" PKG_COUNT ITEM
-if errorlevel 1 exit /b 1
-set "MAX_PKG=%PKG_COUNT%"
-call :TOGGLE_ALL OPT %MAX_PKG% OFF
-exit /b 0
-
-:INIT_BUCKET
-call :LOAD_LIST "%BUCKET_FILE%" BUCKET_COUNT BITEM
-if errorlevel 1 exit /b 1
-set "MAX_BUCKET=%BUCKET_COUNT%"
-call :TOGGLE_ALL BOPT %MAX_BUCKET% OFF
-exit /b 0
-
-:LOAD_LIST
-:: %1 = list file, %2 = counter var, %3 = item-array prefix
-:: File format: key|Label   (empty lines and lines starting with # are ignored)
-set "%~2=0"
-if not exist "%~1" (
-    echo. & echo List file not found: %~1
-    exit /b 1
-)
-
-for /f "usebackq eol=# tokens=1,* delims=|" %%A in ("%~1") do (
-    set "lkey="
-    set "llabel="
-    for %%K in (%%A) do set "lkey=%%K"
-    if defined lkey (
-        set "lraw=%%B"
-        if defined lraw (
-            for /f "tokens=* delims= " %%L in ("!lraw!") do set "llabel=%%L"
-        )
-        if not defined llabel set "llabel=!lkey!"
-        set /a "%~2+=1"
-        set "%~3!%~2!=!lkey!|!llabel!"
-    )
-)
-
-exit /b 0
+echo.
+echo [WARNING] This script is running as Administrator.
+echo           Scoop is designed for per-user installs: its installer refuses to
+echo           run elevated and packages may end up with wrong permissions.
+echo           Close this window and run it from a normal terminal.
+echo.
+pause & exit /b 1
 
 :WHERE_SCOOP
 where scoop >nul 2>&1 && exit /b 0
@@ -241,7 +222,7 @@ echo. & echo Installing Scoop via PowerShell
 powershell -NoProfile -ExecutionPolicy Bypass -Command "irm get.scoop.sh | iex"
 
 :: Update current session PATH so 'where scoop' works immediately without restarting CMD
-set "PATH=%USERPROFILE%\scoop\shims;%PATH%"
+call :SET_SCOOP_PATH
 where scoop >nul 2>&1
 if errorlevel 1 (
     echo. & echo Installation failed or PATH not updated in this session
@@ -249,7 +230,7 @@ if errorlevel 1 (
 )
 
 call :ENSURE_TOOL "git" "mingit" "(necessary for updating Scoop and bucket)"
-if %errorlevel% equ 0 (
+if defined JUST_INSTALLED (
     echo. & echo Tweaking Git settings
     for %%C in (
         "init.defaultBranch=main"
@@ -267,8 +248,7 @@ if %errorlevel% equ 0 (
 )
 
 call :ENSURE_TOOL "aria2c" "aria2" "((Optional) for multi-connection downloads)"
-if %errorlevel% equ 0 (
-    echo. & echo Tweaking aria2 settings
+echo. & echo Tweaking aria2 settings
     for %%C in (
         "aria2-enabled=true"
         "aria2-warning-enabled=false"
@@ -281,21 +261,75 @@ if %errorlevel% equ 0 (
             call scoop config %%K %%L
         )
     )
+
+exit /b 0
+
+:SET_SCOOP_PATH
+:: Order: %SCOOP% (if defined) -> user-level SCOOP value stored by the installer -> default location
+set "SCOOP_DIR=%SCOOP%"
+if not defined SCOOP_DIR for /f "tokens=2,*" %%A in ('reg query "HKCU\Environment" /v SCOOP 2^>nul ^| findstr /i "REG_"') do call set "SCOOP_DIR=%%B"
+if not defined SCOOP_DIR set "SCOOP_DIR=%USERPROFILE%\scoop"
+set "PATH=!SCOOP_DIR!\shims;!PATH!"
+exit /b 0
+
+:INIT_PACKAGES
+call :LOAD_LIST "%PKG_FILE%" PKG_COUNT PK PL
+if errorlevel 1 exit /b 1
+set "MAX_PKG=%PKG_COUNT%"
+call :TOGGLE_ALL OPT %MAX_PKG% OFF
+exit /b 0
+
+:INIT_BUCKET
+call :LOAD_LIST "%BUCKET_FILE%" BUCKET_COUNT BK BL nodefault
+if errorlevel 1 exit /b 1
+set "MAX_BUCKET=%BUCKET_COUNT%"
+call :TOGGLE_ALL BOPT %MAX_BUCKET% OFF
+exit /b 0
+
+:LOAD_LIST
+:: %1 = list file, %2 = counter var, %3 = key-array prefix, %4 = label/url-array prefix
+:: %5 = "nodefault" (optional): leave the second field empty when it is missing
+:: File format: key|second   (empty lines and lines starting with # are ignored)
+:: Result: <key-prefix>N = key, <label-prefix>N = second field
+set "%~2=0"
+if not exist "%~1" (
+    echo. & echo List file not found: %~1
+    exit /b 1
+)
+
+for /f "usebackq eol=# tokens=1,* delims=|" %%A in ("%~1") do (
+    set "lkey="
+    set "llabel="
+    for %%K in (%%A) do set "lkey=%%K"
+    if defined lkey (
+        set "lraw=%%B"
+        if defined lraw (
+            for /f "tokens=* delims= " %%L in ("!lraw!") do set "llabel=%%L"
+        )
+        if not defined llabel if /i not "%~5"=="nodefault" set "llabel=!lkey!"
+        set /a "%~2+=1"
+        set "%~3!%~2!=!lkey!"
+        set "%~4!%~2!=!llabel!"
+    )
 )
 
 exit /b 0
 
 :WHERE_7Z
-if not defined HAS_7Z (
-    where 7z.exe >nul 2>&1
-    if errorlevel 1 (
-        call scoop config use_external_7zip false >nul 2>&1
-    ) else (
-        call scoop config use_external_7zip true >nul 2>&1
-    )
-    set "HAS_7Z=1"
+:: Checked on every call so it stays correct after 7zip gets installed in this session
+where 7z.exe >nul 2>&1
+if errorlevel 1 (
+    call scoop config use_external_7zip false >nul 2>&1
+) else (
+    call scoop config use_external_7zip true >nul 2>&1
 )
-exit /b
+exit /b 0
+
+:BUCKET_URL
+:: %1 = bucket key -> sets 'burl' (empty for official buckets)
+set "burl="
+for /L %%i in (1,1,!MAX_BUCKET!) do if /i "!BK%%i!"=="%~1" set "burl=!BL%%i!"
+exit /b 0
 
 :BULK_ADD_ACTION
 set "type=%~1"
@@ -317,14 +351,27 @@ if errorlevel 2 (
 )
 
 echo.
+set "failed="
 if /i "!type!"=="package" (
     call :WHERE_7Z
-    call scoop install -k !items!
+    for %%I in (!items!) do (
+        call scoop install -k %%I
+        if errorlevel 1 set "failed=!failed! %%I"
+    )
 ) else (
-    for %%B in (!items!) do call scoop bucket add %%B
-    call :GO
+    for %%B in (!items!) do (
+        call :BUCKET_URL %%B
+        call scoop bucket add %%B !burl!
+        if errorlevel 1 set "failed=!failed! %%B"
+    )
 )
 
+if defined failed (
+    echo. & echo The following !type!s failed:
+    for %%F in (!failed!) do echo     - %%F
+)
+
+if /i "!type!"=="bucket" call :GO
 exit /b 0
 
 :PKG_BULK_ACTION
@@ -349,6 +396,10 @@ if /i "!choice!"=="ALL" (
         echo !verb! all packages
     ) else (
         call :GET_SCOOP_NAMES cmd_targets "apps"
+        if not defined cmd_targets (
+            echo Could not read the installed packages list
+            exit /b 1
+        )
         echo !verb! all installed packages:
         for %%P in (!cmd_targets!) do echo     - %%P
     )
@@ -365,28 +416,28 @@ if errorlevel 2 (
 
 echo.
 if /i "!action!"=="upgrade" (
+    call :WHERE_7Z
     call scoop update -k !cmd_targets!
-    call scoop cleanup !cmd_targets!
+    call scoop cleanup -k !cmd_targets!
 ) else (
     call scoop uninstall !cmd_targets! --purge
 )
 exit /b 0
 
 :GET_SCOOP_NAMES
-:: Usage: call :GET_SCOOP_NAMES <return_var> <apps|buckets>
 set "result="
-for /f "usebackq delims=" %%L in (`powershell -NoProfile -Command "(scoop export | ConvertFrom-Json).%~2.Name" 2^>nul`) do (
+for /f "usebackq delims=" %%L in (`scoop export 2^>nul ^| powershell -NoProfile -ExecutionPolicy Bypass -Command "($input | Out-String | ConvertFrom-Json).%~2.Name" 2^>nul`) do (
     if not "%%L"=="" set "result=!result! %%L"
 )
 call set "%~1=%%result%%"
 exit /b
 
 :COLLECT_SELECTED
-:: %1 = item-array prefix, %2 = opt-array prefix, %3 = max count, %4 = output var name
+:: %1 = key-array prefix, %2 = opt-array prefix, %3 = max count, %4 = output var name
 set "result="
 for /L %%i in (1,1,%~3) do (
     if "!%~2%%i!"=="!ON!" (
-        for %%V in (%~1%%i) do for /f "tokens=1 delims=|" %%A in ("!%%V!") do set "result=!result! %%A"
+        for %%V in (%~1%%i) do set "result=!result! !%%V!"
     )
 )
 call set "%~4=%%result%%"
@@ -395,24 +446,16 @@ exit /b
 :RUN_FZF_SELECTOR
 set "fzftmp=%TEMP%\fzf_selected_%RANDOM%.txt"
 set "fzflist=%TEMP%\scoop_pkg_list_%RANDOM%.txt"
-set "rawlist=%TEMP%\scoop_pkg_raw_%RANDOM%.txt"
 
-del "%fzftmp%" "%fzflist%" "%rawlist%" >nul 2>&1
+del "%fzftmp%" "%fzflist%" >nul 2>&1
 
-:: Data retrieval and list preparation
-call scoop-search . > "%rawlist%" 2>nul
+echo. & echo Loading package list...
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$b=$null; scoop-search . 2>$null | ForEach-Object { if ($_ -match '^\x27([^\x27]+)\x27') { $b=$Matches[1] } elseif ($b -and $_.Trim()) { $b + '/' + $_.Trim() } }" > "%fzflist%"
 
-set "curbucket="
-> "%fzflist%" (
-    for /f "usebackq delims=" %%L in ("%rawlist%") do (
-        set "ln=%%L"
-        set "first=!ln:~0,1!"
-        if "!first!"=="'" (
-            for /f "tokens=1,2 delims='" %%A in ("!ln!") do set "curbucket=%%A"
-        ) else if not "!ln!"=="" (
-            for /f "tokens=* delims= " %%A in ("!ln!") do echo !curbucket!/%%A
-        )
-    )
+for %%F in ("%fzflist%") do if %%~zF equ 0 (
+    echo. & echo scoop-search returned no packages
+    del "%fzflist%" >nul 2>&1
+    pause & exit /b 1
 )
 
 fzf --multi --ansi ^
@@ -424,7 +467,7 @@ fzf --multi --ansi ^
     < "%fzflist%" > "%fzftmp%"
 
 if errorlevel 1 (
-    del "%fzftmp%" "%fzflist%" "%rawlist%" >nul 2>&1
+    del "%fzftmp%" "%fzflist%" >nul 2>&1
     exit /b 1
 )
 
@@ -442,11 +485,12 @@ for /f "usebackq delims=" %%L in ("%fzftmp%") do (
 )
 
 :: Clean temporary files and save the result
-del "%fzftmp%" "%fzflist%" "%rawlist%" >nul 2>&1
+del "%fzftmp%" "%fzflist%" >nul 2>&1
 set "toInstall=%selected_pkgs%"
 exit /b 0
 
 :PRINT_ACTION_PROMPT
+echo.
 echo --------------------------------------------------------------------------------
 echo Type ALL to %~1 everything
 echo Or type the exact name(s) as shown above, separated by spaces
@@ -455,7 +499,8 @@ echo ---------------------------------------------------------------------------
 exit /b
 
 :RENDER_COLUMNS
-set "iprefix=%~1"
+:: %1 = display-array prefix, %2 = opt-array prefix, %3 = max count
+set "lprefix=%~1"
 set "oprefix=%~2"
 set "mx=%~3"
 set /a "ROWS=(mx+2)/3"
@@ -465,11 +510,9 @@ for /L %%r in (1,1,!ROWS!) do (
         set /a "idx=%%r+ROWS*(%%x-1)"
         set "cell=                         "
         if !idx! leq !mx! (
-            for %%V in (!iprefix!!idx!) do for %%W in (!oprefix!!idx!) do (
-                for /f "tokens=1,2 delims=|" %%A in ("!%%V!") do (
-                    set "cell=  [!idx!] %%B"
-                    if "!%%W!"=="!ON!" set "cell=* [!idx!] %%B"
-                )
+            for %%V in (!lprefix!!idx!) do for %%W in (!oprefix!!idx!) do (
+                set "cell=  [!idx!] !%%V!"
+                if "!%%W!"=="!ON!" set "cell=* [!idx!] !%%V!"
             )
         )
         set "cell=!cell!                          "
@@ -484,6 +527,8 @@ exit /b
 :: %1 = executable name to check with 'where'
 :: If %3 is NOT given: %2 = description (package name = %1, same as exe name)
 :: If %3 IS given:     %2 = scoop package name to install, %3 = description
+:: Sets JUST_INSTALLED=1 only when this call actually installed the tool
+set "JUST_INSTALLED="
 set "exe=%~1"
 where !exe! >nul 2>&1 && exit /b 0
 
@@ -506,6 +551,7 @@ if %errorlevel% neq 0 (
     echo. & echo Failed to install !pkg! or PATH not updated in this session
     pause & exit /b 1
 )
+set "JUST_INSTALLED=1"
 exit /b 0
 
 :TOGGLE_ALL
@@ -521,7 +567,7 @@ set "max_count=%~2"
 set "invalid="
 set "tokens=!choice:,= !"
 
-for %%G in (%tokens%) do (
+for %%G in (!tokens!) do (
     set "tok=%%G"
     set "matched=0"
     set "noHyphen=!tok:-=!"
@@ -567,7 +613,7 @@ if defined invalid (
 exit /b
 
 :CHOICE
-choice /C YN /N /M "%~1 [Y/n]: "
+choice /C YN /N /M "%~1 [Y/N]: "
 exit /b
 
 :GO
