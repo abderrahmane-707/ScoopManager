@@ -449,7 +449,7 @@ set "fzflist=%TEMP%\scoop_pkg_list_%RANDOM%.txt"
 
 del "%fzftmp%" "%fzflist%" >nul 2>&1
 
-echo. & echo Loading package list...
+cls & echo Loading package list...
 powershell -NoProfile -ExecutionPolicy Bypass -Command "$b=$null; scoop-search . 2>$null | ForEach-Object { if ($_ -match '^\x27([^\x27]+)\x27') { $b=$Matches[1] } elseif ($b -and $_.Trim()) { $b + '/' + $_.Trim() } }" > "%fzflist%"
 
 for %%F in ("%fzflist%") do if %%~zF equ 0 (
