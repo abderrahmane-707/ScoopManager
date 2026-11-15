@@ -11,11 +11,11 @@ librewolf|LibreWolf
 tor-browser|Tor Browser
 
 # File Managers, Search & Navigation
+eza|eza
 ripgrep|Ripgrep
 fd|fd-find
 fzf|fzf
 yazi|Yazi
-tre-command|Tre
 everything|Everything
 
 # Archivers & Compression
