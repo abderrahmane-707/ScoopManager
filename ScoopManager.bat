@@ -35,6 +35,7 @@ echo    [U] Update Packages
 echo    [R] Remove Packages
 echo    [B] Manage Buckets
 echo    [M] More
+echo    [I] Info
 echo.
 echo              ---------------------------------------------------------------------------
 echo.
@@ -53,8 +54,34 @@ if /i "!choice!"=="U" goto UPDATE_MENU
 if /i "!choice!"=="R" goto REMOVE_MENU
 if /i "!choice!"=="B" goto BUCKET_INITIAL
 if /i "!choice!"=="M" goto MORE_PKG
+if /i "!choice!"=="I" goto PKG_INFO
 
 call :MULTI_INPUT OPT %MAX_PKG%
+goto SCOOP_MENU
+
+:PKG_INFO
+:: Lists every package from packages.txt with its key and bucket
+cls
+echo.
+echo    Packages in the list and the bucket each one belongs to
+echo    ---------------------------------------------------------------------------
+echo.
+set "used= "
+for /L %%i in (1,1,%MAX_PKG%) do (
+    set "ikey=!PK%%i!"
+    set "ibucket=!PB%%i!"
+    if not defined ibucket if not "!ikey:/=!"=="!ikey!" for /f "tokens=1 delims=/" %%A in ("!ikey!") do set "ibucket=%%A"
+    if not defined ibucket set "ibucket=?"
+    for %%B in (!ibucket!) do if "!used: %%B =!"=="!used!" set "used=!used!%%B "
+    set "inum=   %%i"
+    set "c1=!PL%%i!                                   "
+    set "c2=!ikey!                                   "
+    echo    [!inum:~-3!] !c1:~0,26! !c2:~0,22! !ibucket!
+)
+echo.
+echo    ---------------------------------------------------------------------------
+echo.
+pause
 goto SCOOP_MENU
 
 :RUN_PACKAGES
@@ -273,14 +300,14 @@ set "PATH=!SCOOP_DIR!\shims;!PATH!"
 exit /b 0
 
 :INIT_PACKAGES
-call :LOAD_LIST "%PKG_FILE%" PKG_COUNT PK PL
+call :LOAD_LIST "%PKG_FILE%" PKG_COUNT PK PL PB
 if errorlevel 1 exit /b 1
 set "MAX_PKG=%PKG_COUNT%"
 call :TOGGLE_ALL OPT %MAX_PKG% OFF
 exit /b 0
 
 :INIT_BUCKET
-call :LOAD_LIST "%BUCKET_FILE%" BUCKET_COUNT BK BL nodefault
+call :LOAD_LIST "%BUCKET_FILE%" BUCKET_COUNT BK BL "" nodefault
 if errorlevel 1 exit /b 1
 set "MAX_BUCKET=%BUCKET_COUNT%"
 call :TOGGLE_ALL BOPT %MAX_BUCKET% OFF
@@ -288,28 +315,35 @@ exit /b 0
 
 :LOAD_LIST
 :: %1 = list file, %2 = counter var, %3 = key-array prefix, %4 = label/url-array prefix
-:: %5 = "nodefault" (optional): leave the second field empty when it is missing
-:: File format: key|second   (empty lines and lines starting with # are ignored)
-:: Result: <key-prefix>N = key, <label-prefix>N = second field
+:: %5 = third-field array prefix (optional, use "" to skip): bucket name for packages
+:: %6 = "nodefault" (optional): leave the second field empty when it is missing
+:: File format: key|second|third   (second and third are optional)
+:: Empty lines and lines starting with # are ignored
+:: Result: <key-prefix>N = key, <label-prefix>N = second field, <third-prefix>N = third field
 set "%~2=0"
 if not exist "%~1" (
     echo. & echo List file not found: %~1
     exit /b 1
 )
 
-for /f "usebackq eol=# tokens=1,* delims=|" %%A in ("%~1") do (
+for /f "usebackq eol=# delims=" %%R in ("%~1") do (
     set "lkey="
     set "llabel="
-    for %%K in (%%A) do set "lkey=%%K"
+    set "lbucket="
+    set "lline=%%R|-|-"
+    for /f "tokens=1,2,3 delims=|" %%A in ("!lline!") do (
+        for %%K in (%%A) do set "lkey=%%K"
+        for /f "tokens=* delims= " %%Z in ("%%B") do set "llabel=%%Z"
+        for %%K in (%%C) do set "lbucket=%%K"
+    )
     if defined lkey (
-        set "lraw=%%B"
-        if defined lraw (
-            for /f "tokens=* delims= " %%L in ("!lraw!") do set "llabel=%%L"
-        )
-        if not defined llabel if /i not "%~5"=="nodefault" set "llabel=!lkey!"
+        if "!llabel!"=="-" set "llabel="
+        if "!lbucket!"=="-" set "lbucket="
+        if not defined llabel if /i not "%~6"=="nodefault" set "llabel=!lkey!"
         set /a "%~2+=1"
         set "%~3!%~2!=!lkey!"
         set "%~4!%~2!=!llabel!"
+        if not "%~5"=="" set "%~5!%~2!=!lbucket!"
     )
 )
 

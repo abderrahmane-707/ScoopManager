@@ -1,56 +1,59 @@
 # ============================================================
 # Scoop packages list - one package per line
-# Format:  scoop-package-name|Display Name
+# Format:  scoop-package-name|Display Name|bucket
+# The bucket field is optional and is only used by the [I] Info option
 # Lines starting with # and empty lines are ignored
-# Use bucket/package if needed, e.g. extras/vscode|VS Code
+# Use bucket/package as the name if you need to force a bucket,
+# e.g. extras/vscode|VS Code|extras
+# Do not leave the Display Name empty (use the package name instead)
 # Avoid the ! character in names
 # ============================================================
 
 # Web Browsers
-librewolf|LibreWolf
-tor-browser|Tor Browser
+librewolf|LibreWolf|extras
+tor-browser|Tor Browser|extras
 
 # File Managers, Search & Navigation
-eza|eza
-ripgrep|Ripgrep
-fd|fd-find
-fzf|fzf
-yazi|Yazi
-everything|Everything
+eza|eza|main
+ripgrep|Ripgrep|main
+fd|fd-find|main
+fzf|fzf|main
+yazi|Yazi|main
+everything|Everything|extras
 
 # Archivers & Compression
-7zip-zstd|7-Zip Zstandard
-winrar|WinRAR
-peazip|PeaZip
+7zip-zstd|7-Zip Zstandard|versions
+winrar|WinRAR|extras
+peazip|PeaZip|extras
 
 # Text Editors
-vscode|VS Code
-micro|Micro
-notepadplusplus|Notepad++
+vscode|VS Code|extras
+micro|Micro|main
+notepadplusplus|Notepad++|extras
 
 # System Info
-btop|btop
-hwinfo|HWiNFO
-duf|duf
-dust|dust
+btop|btop|main
+hwinfo|HWiNFO|extras
+duf|duf|main
+dust|dust|main
 
 # System Cleaners
-bleachbit|BleachBit
+bleachbit|BleachBit|extras
 
 # Network, Remote & Downloads
-aria2|aria2
-ytdlp-interface|yt-dlp Interface
-rclone|Rclone
-qbittorrent|qBittorrent
-localsend|LocalSend
+aria2|aria2|main
+ytdlp-interface|yt-dlp Interface|extras
+rclone|Rclone|main
+qbittorrent|qBittorrent|extras
+localsend|LocalSend|extras
 
 # Git Tools
-git|Git
-mingit|Mingit
-gh|GitHub CLI
-sourcegit|SourceGit
+git|Git|main
+mingit|Mingit|main
+gh|GitHub CLI|main
+sourcegit|SourceGit|extras
 
 # Dev
-mingw|MinGW
-llvm|LLVM
-hyperfine|Hyperfine
+mingw|MinGW|main
+llvm|LLVM|main
+hyperfine|Hyperfine|main
